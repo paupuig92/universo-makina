@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#000000">
+<title>Universo Makina</title>
+<style>
+:root{--bg:#000;--fg:#f4f4f5;--dim:#8a8a93;--line:#26262b;--card:#111114;--part:#ff4fa3}
+*{box-sizing:border-box;margin:0}
+html,body{background:var(--bg);color:var(--fg);font:16px/1.3 -apple-system,BlinkMacSystemFont,"Inter",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+body{padding:calc(env(safe-area-inset-top) + 12px) 16px calc(env(safe-area-inset-bottom) + 24px);max-width:640px;margin:0 auto}
+header{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+h1{font-size:15px;letter-spacing:.14em;text-transform:uppercase;font-weight:800}
+.clock{font-variant-numeric:tabular-nums;font-size:15px;color:var(--dim)}
+.sub{color:var(--dim);font-size:13px;margin-top:2px}
+.bar{height:4px;background:var(--line);border-radius:2px;margin:14px 0 4px;overflow:hidden;display:flex}
+.bar i{display:block;height:100%}
+.meta{display:flex;justify-content:space-between;font-size:12px;color:var(--dim);font-variant-numeric:tabular-nums}
+.now{margin-top:22px;padding:18px;border-radius:18px;background:var(--card);border:1px solid var(--line);position:relative;overflow:hidden}
+.now:before{content:"";position:absolute;inset:0 auto 0 0;width:5px;background:var(--part)}
+.tag{font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--part)}
+.title{font-size:30px;line-height:1.08;font-weight:800;margin:8px 0 4px;word-break:break-word}
+.mark{display:inline-block;font-size:14px;font-weight:800;padding:2px 7px;border-radius:6px;background:var(--part);color:#000;vertical-align:middle;margin-right:6px}
+.left{font-size:44px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.02em;margin-top:10px}
+.left small{font-size:14px;color:var(--dim);font-weight:600;letter-spacing:0;margin-left:6px}
+.tbar{height:6px;background:var(--line);border-radius:3px;margin-top:10px;overflow:hidden}
+.tbar i{display:block;height:100%;background:var(--part)}
+h2{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin:24px 0 8px;font-weight:700}
+ol{list-style:none;padding:0}
+li{display:grid;grid-template-columns:62px 1fr;gap:10px;padding:9px 0 9px 10px;border-bottom:1px solid var(--line);font-size:15px;border-left:3px solid var(--c,transparent)}
+li .t{font-variant-numeric:tabular-nums;color:var(--dim);font-size:13px;padding-top:1px}
+li.past{opacity:.35}
+li.cur{background:var(--card);font-weight:700}
+.part-h{display:flex;justify-content:space-between;margin:20px 0 4px;font-size:13px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--c)}
+.state{margin-top:22px;padding:22px 18px;border-radius:18px;background:var(--card);border:1px solid var(--line);font-size:22px;font-weight:800}
+.state p{font-size:14px;font-weight:500;color:var(--dim);margin-top:6px}
+.tools{display:flex;gap:8px;flex-wrap:wrap;margin-top:28px}
+button{font:inherit;font-size:14px;font-weight:700;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 14px}
+button.go{background:var(--fg);color:#000;border-color:var(--fg)}
+.note{font-size:12px;color:var(--dim);margin-top:8px}
+</style>
+</head>
+<body>
+<header><h1 id="nom">Universo Makina</h1><span class="clock" id="clock">--:--</span></header>
+<div class="sub" id="lloc"></div>
+<div class="bar" id="bar"></div>
+<div class="meta"><span id="done"></span><span id="rest"></span></div>
+<main id="main"></main>
+<h2>Setlist</h2>
+<div id="list"></div>
+<div class="tools">
+  <button class="go" id="bStart">▶ Empieza ahora</button>
+  <button id="bMinus">−10 s</button><button id="bPlus">+10 s</button>
+  <button id="bReset">Hora prevista</button>
+</div>
+<p class="note" id="sync"></p>
+
+<script>
+/* ==== SET ==== (build.py hi posa el set triat; aquí, un d'exemple per provar) */
+const SET = /*SET*/{"nom":"Set de prueba","lloc":"","inici":null,"txt":"# Parte 1\n[rosa]\n00:00:00-00:02:00 1. Intro\n00:02:00-00:05:00 2. Tema dos\n# Parte 2\n[cian]\n00:05:00-00:08:00 1. Tema tres\n00:08:00-00:10:00 2. Final"}/*SET*/;
+/* ==== FI SET ==== */
+
+// Colors de les parts: «[rosa]» sol en una línia (com a la Midnight App)
+const COL = { rojo:'#ff4d4d', naranja:'#ff8a1f', amarillo:'#ffd21f', verde:'#3ddc84', cian:'#22d3ee', azul:'#4d7cff', lila:'#b26bff', rosa:'#ff4fa3' };
+
+// «H:MM:SS» o «MM:SS» → segons des de l'inici del set
+const secs = s => { const p = s.split(':').map(Number); return p.length === 3 ? p[0]*3600 + p[1]*60 + p[2] : p[0]*60 + p[1]; };
+const TM = String.raw`\d{1,2}:\d{2}(?::\d{2})?`;
+const LINE = new RegExp(`^(${TM})(?:\\s*[-–]\\s*(${TM}))?\\s+(.+)$`);
+
+// Setlist en text (el mateix format que les tasques de la Midnight App):
+//   # Part 1          → nova part
+//   [rosa]            → color de la part
+//   00:01:40-00:03:20 2. +1 Artista – Tema   → un tema (l'hora final és opcional: si no hi és, acaba quan comença el següent)
+function parseSet(txt) {
+  const parts = [], tracks = [];
+  let part = null;
+  for (const raw of txt.split('\n')) {
+    const l = raw.trim();
+    if (!l) continue;
+    if (l.startsWith('#')) { part = { nom: l.replace(/^#+\s*/, ''), c: COL.rosa, n: 0 }; parts.push(part); continue; }
+    const c = l.match(/^\[(\w+)\]$/);
+    if (c) { if (part) part.c = COL[c[1]] || part.c; continue; }
+    const m = l.match(LINE);
+    if (!m) continue;
+    if (!part) { part = { nom: '', c: COL.rosa, n: 0 }; parts.push(part); }
+    let t = m[3].replace(/^\d+\.\s*/, '');           // treu el «12.» del davant
+    const mk = t.match(/^([+-]\d)\s+/);              // «+1», «-2»: marca de l'ordre del DJ
+    if (mk) t = t.slice(mk[0].length);
+    tracks.push({ a: secs(m[1]), b: m[2] ? secs(m[2]) : null, t, mk: mk ? mk[1] : '', p: part, i: ++part.n });
+  }
+  tracks.forEach((x, i) => { if (x.b == null) x.b = tracks[i+1] ? tracks[i+1].a : x.a + 180; });
+  parts.forEach(p => { const ts = tracks.filter(x => x.p === p); p.a = ts[0]?.a ?? 0; p.b = ts.at(-1)?.b ?? 0; });
+  return { parts: parts.filter(p => p.n), tracks };
+}
+
+const { parts, tracks } = parseSet(SET.txt);
+const TOTAL = tracks.length ? tracks.at(-1).b : 0;
+
+// Inici: el del set, o el que has marcat amb «Empieza ahora» (guardat en aquest mòbil)
+const KEY = 'um.start.' + (SET.id || SET.nom);
+const store = { get(){ try { return +localStorage.getItem(KEY) || 0; } catch { return 0; } }, set(v){ try { v ? localStorage.setItem(KEY, v) : localStorage.removeItem(KEY); } catch {} } };
+const planned = SET.inici ? Date.parse(SET.inici) : 0;
+const startAt = () => store.get() || planned || Date.now();
+
+const $ = id => document.getElementById(id);
+const fmt = s => { s = Math.max(0, Math.round(s)); const h = Math.floor(s/3600), m = Math.floor(s%3600/60), x = s%60; return (h ? h + ':' + String(m).padStart(2,'0') : m) + ':' + String(x).padStart(2,'0'); };
+const hhmm = d => d.toLocaleTimeString('es-ES', { hour:'2-digit', minute:'2-digit' });
+const esc = s => s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
+
+$('nom').textContent = SET.nom || 'Universo Makina';
+$('lloc').textContent = SET.lloc || '';
+$('bar').innerHTML = parts.map(p => `<i style="width:${(p.b-p.a)/TOTAL*100}%;background:${p.c};opacity:.35" data-p></i>`).join('');
+$('list').innerHTML = parts.map(p => `<div class="part-h" style="--c:${p.c}"><span>${esc(p.nom)}</span><span>${p.n} temas</span></div><ol>` +
+  tracks.filter(x => x.p === p).map(x => `<li style="--c:${p.c}" data-i="${tracks.indexOf(x)}"><span class="t">${fmt(x.a)}</span><span>${x.mk ? `<b>${x.mk}</b> ` : ''}${esc(x.t)}</span></li>`).join('') + '</ol>').join('');
+const lis = [...document.querySelectorAll('li[data-i]')];
+
+let last = -2;
+function tick() {
+  const now = Date.now(), t0 = startAt(), el = (now - t0) / 1000;
+  $('clock').textContent = hhmm(new Date(now));
+  const i = tracks.findIndex(x => el >= x.a && el < x.b);
+  const pct = Math.min(1, Math.max(0, el / TOTAL));
+  $('done').textContent = el > 0 && el < TOTAL ? fmt(el) + ' de set' : '';
+  $('rest').textContent = el > 0 && el < TOTAL ? 'quedan ' + fmt(TOTAL - el) : fmt(TOTAL) + ' en total';
+  // barra de dalt: cada part es pinta plena fins on som
+  [...$('bar').children].forEach((b, k) => { const p = parts[k]; b.style.opacity = el >= p.b ? 1 : el > p.a ? .35 + .65*(el-p.a)/(p.b-p.a) : .35; });
+
+  if (el < 0) {
+    $('main').innerHTML = `<div class="state">Empieza en ${fmt(-el)}<p>${new Date(t0).toLocaleString('es-ES',{weekday:'long',hour:'2-digit',minute:'2-digit'})} · ${tracks.length} temas · ${fmt(TOTAL)}</p></div>`;
+  } else if (i < 0) {
+    $('main').innerHTML = `<div class="state">Set terminado 🙌<p>${tracks.length} temas · ${fmt(TOTAL)}</p></div>`;
+  } else {
+    const x = tracks[i];
+    document.documentElement.style.setProperty('--part', x.p.c);
+    if (i !== last) $('main').innerHTML = `<div class="now"><div class="tag">${esc(x.p.nom)} · ${x.i}/${x.p.n}</div>
+      <div class="title">${x.mk ? `<span class="mark">${x.mk}</span>` : ''}${esc(x.t)}</div>
+      <div class="left" id="left"></div><div class="tbar"><i id="tb"></i></div></div>
+      <h2>A continuación</h2><ol>${tracks.slice(i+1, i+4).map(n => `<li style="--c:${n.p.c}"><span class="t">${hhmm(new Date(t0 + n.a*1000))}</span><span>${n.mk ? `<b>${n.mk}</b> ` : ''}${esc(n.t)}</span></li>`).join('')}</ol>`;
+    $('left').innerHTML = fmt(x.b - el) + '<small>para el siguiente</small>';
+    $('tb').style.width = ((el - x.a) / (x.b - x.a) * 100) + '%';
+  }
+  if (i !== last) {
+    lis.forEach((li, k) => { li.className = k < i || (i < 0 && el >= TOTAL) ? 'past' : k === i ? 'cur' : ''; });
+    if (i >= 0 && last !== -2) lis[i].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    last = i;
+  }
+  $('sync').textContent = store.get() ? 'Sincronizado a mano: empieza a las ' + new Date(t0).toLocaleTimeString('es-ES') : planned ? 'Hora prevista del set' : '';
+}
+
+$('bStart').onclick = () => { store.set(Date.now()); last = -3; tick(); };
+$('bMinus').onclick = () => { store.set(startAt() + 10000); last = -3; tick(); };   // el set va 10 s per darrere
+$('bPlus').onclick  = () => { store.set(startAt() - 10000); last = -3; tick(); };
+$('bReset').onclick = () => { store.set(0); last = -3; tick(); };
+tick(); setInterval(tick, 500);
+</script>
+</body>
+</html>
