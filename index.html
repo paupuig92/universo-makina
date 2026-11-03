@@ -527,7 +527,7 @@ body.qe .bl{display:none}
   <button class="save" id="bUpd">Actualizar app</button>
   <p id="updS" role="status"></p>
 </div>
-<footer><p class="ver">v<span id="ver">—</span></p></footer>
+<footer><p class="ver" id="ver">Versión de prueba</p></footer>
 </section>
 
 <!-- Editor del setlist (text). Els canvis es guarden només en aquest mòbil: um.txt.<id> -->
@@ -588,6 +588,8 @@ body.qe .bl{display:none}
 /* ==== SET ==== (build.py hi posa el set triat; aquí, un d'exemple per provar) */
 const SET = /*SET*/{"nom":"Set de prueba","lloc":"","inici":null,"txt":"# Parte 1\n[rosa]\n00:00:00-00:02:00 1. Intro\n00:02:00-00:05:00 2. Tema dos\n# Parte 2\n[cian]\n00:05:00-00:08:00 1. Tema tres\n00:08:00-00:10:00 2. Final"}/*SET*/;
 /* ==== FI SET ==== */
+// Versió (build.py: empremta del contingut + data dels fitxers). null = sense build (proves)
+const BUILD = /*BUILD*/null/*BUILD*/;
 
 // Colors de les parts: «[rosa]» sol en una línia (com a la Midnight App). Retocats per anar amb la marca (negre càlid + os + taronja UM).
 const COL = { rojo:'#ff3347', naranja:'#ff7a1a', amarillo:'#ffd43b', verde:'#3ee07f', cian:'#2fd6f0', azul:'#4a82ff', lila:'#ae7bff', rosa:'#ff5cae' };
@@ -1225,9 +1227,8 @@ $('avTest').onclick = () => {
 };
 avSync();
 
-// Versió: la de la memòria offline (service worker), si n'hi ha
-const ver = () => window.caches?.keys().then(ks => { const k = ks.find(x => x.startsWith('um-')); if (k) setText($('ver'), k.slice(3)); }).catch(() => {});
-ver(); setTimeout(ver, 4000);   // la primera vegada la memòria encara s'està omplint
+// Versió: data llegible + empremta curta (la mateixa que el service worker)
+if (BUILD) { const d = new Date(BUILD.d); setText($('ver'), `Versión del ${pad(d.getDate())}/${pad(d.getMonth() + 1)} ${pad(d.getHours())}:${pad(d.getMinutes())} · ${BUILD.v}`); }
 
 // Actualitzar a mà: busca una versió nova al servidor i, si n'hi ha, recarrega (encara que soni un tema).
 // Amb poca cobertura no s'ha de quedar penjat: com a molt 8 s per buscar (navigator.onLine a l'iPhone sovint diu «sí» sense xarxa).
