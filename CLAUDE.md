@@ -11,6 +11,7 @@ Neix de la prova del set makina dins la Midnight App (31-10-2026, perfil Pau, 19
 | `index.html` | Tota l'app (HTML+CSS+JS). Porta un set de prova entre `/*SET*/ … /*SET*/`. |
 | `sets/<id>/set.txt` | El setlist en text (format de sota). Un per set. |
 | `sets/<id>/set.json` | Nom, lloc i hora d'inici (`inici`, amb zona: `2026-11-01T00:00:00+01:00`). |
+| `sw.js` · `manifest.webmanifest` · `assets/` | Funciona sense cobertura (service worker), icona a la pantalla d'inici i logo d'UM. `build.py` els copia a `docs/` i canvia la versió a cada build. |
 | `build.py` | `python3 build.py` llista els sets · `python3 build.py <id>` genera `docs/index.html` amb aquest set. |
 | `docs/` | El que es publicarà (GitHub Pages), quan en Pau doni l'OK. |
 
@@ -26,8 +27,10 @@ Neix de la prova del set makina dins la Midnight App (31-10-2026, perfil Pau, 19
 - `+1`, `-2`… al davant del títol = marca d'en Pau (es mostra com a etiqueta).
 
 ## Com funciona
-- L'app calcula el tema segons l'hora del mòbil i l'`inici` del set.
-- **▶ Empieza ahora** sincronitza el set amb la realitat (es guarda en aquell mòbil). `−10 s / +10 s` per afinar. «Hora prevista» ho torna a l'`inici`.
+- Barra de pestanyes a baix: **Ahora** (tema, compte enrere, el que ve i botons `◂ 10 s / 10 s ▸ / Prevista / Reiniciar`), **Setlist** (s'obre al tema que sona; tira fixa a dalt amb tema + temps) i **Ajustes**. Es recorda l'última pestanya.
+- L'app va sola amb el rellotge del mòbil. Hora d'inici que mana, per ordre: 1) sincronitzat a mà (**▶ Empieza ahora**, ±10 s) → 2) data i hora posades a **Ajustes → Inicio del set** (es guarda en aquell mòbil) → 3) l'`inici` del `set.json`.
+- Guardar una data/hora nova a Ajustes treu l'ajust a mà (pregunta abans). «Volver a la hora del archivo» torna a l'`inici`. «Prevista» treu només l'ajust a mà.
+- A Ajustes també: segons d'avís abans del canvi (0/10/15/20/30), dades del set i versió. L'avís «Deshacer» surt a dalt (no tapa els botons).
 
 ## Regles
 - **Crear el repo de GitHub o publicar res: SEMPRE preguntar a en Pau abans.**
