@@ -1629,6 +1629,8 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   let had = !!navigator.serviceWorker.controller;
   navigator.serviceWorker.addEventListener('controllerchange', () => { if (!had) { had = true; return; } if (updAsk) return location.reload(); if (last < 0 && !document.body.classList.contains('modal')) location.reload(); });
   navigator.serviceWorker.register('sw.js').catch(() => {});
+  // L'iPhone no tanca l'app de la pantalla d'inici: en tornar-hi, mira si hi ha versió nova
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') navigator.serviceWorker.getRegistration().then(r => r && r.update()).catch(() => {}); });
 }
 </script>
 </body>
