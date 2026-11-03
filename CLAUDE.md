@@ -11,7 +11,7 @@ Neix de la prova del set makina dins la Midnight App (31-10-2026, perfil Pau, 19
 | `index.html` | Tota l'app (HTML+CSS+JS). Porta un set de prova entre `/*SET*/ … /*SET*/`. |
 | `sets/<id>/set.txt` | El setlist en text (format de sota). Un per set. |
 | `sets/<id>/set.json` | Nom, lloc i hora d'inici (`inici`, amb zona: `2026-11-01T00:00:00+01:00`). |
-| `sw.js` · `manifest.webmanifest` · `assets/` | Funciona sense cobertura (service worker), icona a la pantalla d'inici i logo d'UM. `build.py` els copia a `docs/` i canvia la versió a cada build. |
+| `sw.js` · `manifest.webmanifest` · `assets/` | Funciona sense cobertura (service worker), icona a la pantalla d'inici i logo d'UM. `build.py` els copia a `docs/`. La versió és una empremta del contingut (pàgina, set, sw.js, manifest, icones): si no canvia res, és la mateixa i els mòbils no rebaixen l'app. A Ajustes surt «Versión del dd/mm hh:mm · empremta». |
 | `build.py` | `python3 build.py` llista els sets · `python3 build.py <id>` genera `docs/index.html` amb aquest set. |
 | `docs/` | El que es publicarà (GitHub Pages), quan en Pau doni l'OK. |
 
@@ -33,6 +33,9 @@ Neix de la prova del set makina dins la Midnight App (31-10-2026, perfil Pau, 19
 - **Parar** (en directe, també en Pausa): dos tocs en 3 s («¿Parar?»), l'app deixa de seguir el rellotge i surt **«Parado»** amb el botó gran **Empezar**. Es guarda per set a `um.stop.<id>` (aguanta recarregar) i no toca l'ajust a mà ni l'hora guardada (Deshacer ho torna exacte). El treuen: **Empezar**, **Programado** i guardar data/hora (o «Usar la del archivo») a Ajustes. Parat no surten avisos. També a **Ajustes → Directo** (amb «Reiniciar ahora», dos tocs, i «Programado»).
 - Per què «Prevista» ja no hi és: en Pau va triar `Empezar / Parar / Programado`; «Reiniciar» només és a Ajustes (Parar + Empezar fan el mateix des d'Ahora). Les columnes de la fila no són iguals (`.8/.8/1.5/.9fr`) perquè «Programado» hi càpiga a 375 px i apaïsat.
 - A Ajustes també: **Avisos** (a sota), dades del set i versió. L'avís «Deshacer» surt a dalt (no tapa els botons).
+- **Guia «Añádela a la pantalla de inicio»** a dalt d'Ajustes: només a l'iPhone obert des de Safari (no a l'app de la icona); «Entendido» la treu (`um.guia`). Safari i l'app de la icona tenen la memòria separada.
+- **Actualizar app**: com a molt 8 s buscant (sense cobertura → «Sin conexión…»). L'app també busca versió nova cada 2 min amb la pantalla encesa i en tornar-hi. Sense cap tema sonant es recarrega sola; si sona un tema o l'editor és obert, surt l'avís **«Versión nueva» + Actualizar** (no es recarrega mai sola a mig set).
+- Canviar de pestanya: primer amunt i després el contingut (si no, a l'iPhone la barra de baix es mou).
 - Entre dos temes amb forat (fi < inici del següent) surt **«Pausa»** amb el compte enrere al següent. «Fin del set» només després de l'últim tema.
 
 ## Avisos (Ajustes → Avisos)
@@ -48,7 +51,8 @@ Neix de la prova del set makina dins la Midnight App (31-10-2026, perfil Pau, 19
 - **Ajustes → Setlist → Editar setlist**: editor de text a pantalla sencera (mateix format de dalt, s'hi pot enganxar de la Midnight App o del Google Doc). Mentre escrius diu partes/temas/durada i llista els errors (vora taronja: línies que no es poden llegir) i avisos (vora groga: solapa, va enrere, forat, color desconegut, tema sense part). Tocar-ne una porta a la línia.
 - Guardar amb línies il·legibles demana «Guardar igual»; si no hi ha cap tema, no deixa guardar. «Cancelar» amb canvis cal tocar-lo dos cops.
 - **Desplazar tiempos desde**: des del tema N, ± mm:ss (mou aquell i tots els següents; l'anterior s'empalma). Després, Guardar.
-- **Copiar**: copia el text per passar-lo al Mac (per actualitzar `sets/<id>/set.txt`).
+- **Enviar** (o **Copiar** si el mòbil no té full de compartir): obre el full de compartir de l'iPhone (AirDrop al Mac, Notas, Copiar…) per actualitzar `sets/<id>/set.txt`.
+- **Esborrany**: el que s'escriu a l'editor es guarda sol (`um.draft.<id>`); si l'iPhone tanca l'app abans de Guardar, en tornar a obrir l'editor surt «Recuperado el texto sin guardar.». S'esborra en Guardar o Cancelar.
 - **Pestanya Setlist → Editar**: toca un tema → títol, marca (+1…), inici/fi, «Mover los siguientes», «Añadir detrás», «Borrar» (amb «Adelantar los siguientes»). Reescriu el mateix text (una sola font).
 - **Els canvis només viuen en aquell mòbil** (localStorage `um.txt.<id>`): no canvien el fitxer ni els altres mòbils. Es veu l'etiqueta «Editada · data / Solo en este móvil.» (Ajustes i Setlist) amb **Volver al original** (pregunta abans). Cada guardat té «Deshacer».
 - Canviar-la en directe no trenca la sincronia: les hores són des de l'inici del set i el tema que sona es recalcula al moment.
@@ -63,8 +67,10 @@ Com els cartells d'UM, sec i sense «capa IA». Les regles també són al princi
 - **Recursos de marca permesos (només aquí)**: ▲ a les 4 cantonades del marc principal (tema actual i pantalles d'abans/després); llista tipus «tour dates» (hora en color + títol en crema) per al Setlist i «Siguientes»; capçalera de cartell a les pantalles d'abans/després (`DOM ● 00:00 A 05:00` / `01.11.2026` a l'esquerra, lloc / ciutat a la dreta, logo); franja tipus «SOLD OUT» a tota l'amplada per al canvi de part i el fi del set.
 - **Prohibit**: més triangles, dobles línies, ▼ als títols, frases d'ajuda sota cada control, gra, brillantors/glows, gradients de fons, batecs infinits, glifs decoratius (▶ ◂ ▸ ★ ↻ ＋ ✓ ✕) als textos.
 - **Textos**: castellà natural i curt. Sense explicacions llargues; on es guarda només al mòbil, «Solo en este móvil.».
-- **iPhone (pantalla d'inici)**: la fila de botons d'Ahora és `position:sticky` a sobre de la barra (`--tabh` + zona segura); franja negra sota la barra d'estat (`body:after`); marges de scroll del Setlist amb la zona segura. Provar amb insets reals (59/34, 47/34, SE 20/0, apaïsat) abans de publicar.
-- **Seguretat**: `index.html` porta una Content-Security-Policy al `<head>` (només el mateix domini + Google Fonts). Si s'afegeix cap recurs extern, cal ampliar-la i mirar que la consola no doni errors.
+- **iPhone (pantalla d'inici)**: barra d'estat **`black`** (no `black-translucent`: amb la translúcida l'iOS 26 difumina la franja de dalt). A dalt hi ha `<div class="topedge">`, fixa, d'un sol color, que **rep tocs** (sense `pointer-events:none` ni pseudo-element: si no, l'iOS la difumina). `--sat` = zona segura + 22 px només si n'hi ha (icones velles posades amb la translúcida); `--top` = alçada de la franja (mín. 12 px en vertical, 0 en apaïsat) i és el que fan servir la tira del Setlist, els marges de scroll, l'editor i l'avís. L'iPhone llegeix el meta **només en afegir la icona** (per canviar-lo cal esborrar-la i tornar-la a afegir). La fila de botons d'Ahora és `position:sticky` a sobre de la barra (`--tabh` + zona segura). Provar amb insets reals (0 amb `black`; 59/34, 47/34, SE 20/0, apaïsat) abans de publicar.
+- **Tacte**: botons, barra i tira sense selecció ni lupa; `touchstart` buit perquè Safari faci `:active`; `overflow-x:clip` (no `hidden`: trenca els sticky); amb l'editor obert el fons no es mou (`html:has(>body.modal)`).
+- **Lletra**: només les del sistema (Helvetica Neue → Helvetica → Arial → system-ui). Res de Google Fonts: bloquejava la primera pantalla.
+- **Seguretat**: `index.html` porta una Content-Security-Policy al `<head>` (només el mateix domini). Si s'afegeix cap recurs extern, cal ampliar-la i mirar que la consola no doni errors.
 
 ## Regles
 - **Crear el repo de GitHub o publicar res: SEMPRE preguntar a en Pau abans.**
