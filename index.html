@@ -6,7 +6,7 @@
 <meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="U. Makina">
 <meta name="theme-color" content="#0b0807">
@@ -41,13 +41,15 @@ body{
   /* a baix hi ha lloc per a la barra de pestanyes (fixa) */
   padding:calc(var(--sat) + 14px) calc(env(safe-area-inset-right) + 16px) calc(env(safe-area-inset-bottom) + var(--tabh) + 23px) calc(env(safe-area-inset-left) + 16px);
 }
-/* App a la pantalla d'inici (barra d'estat transparent): res no passa per sota del rellotge i la bateria */
 /* Sense zoom amb doble toc ni pinça (és una eina, no una web) */
 html{touch-action:pan-x pan-y;-webkit-text-size-adjust:100%}
-:root{--sat:env(safe-area-inset-top)}
-/* Pantalla d'inici (iPhone): l'iOS difumina una franja sota la barra d'estat; el contingut comença més avall i la franja queda negra */
-@media (display-mode:standalone) and (orientation:portrait){:root{--sat:calc(env(safe-area-inset-top) + 22px)}}
-body:after{content:"";position:fixed;left:0;right:0;top:0;height:var(--sat);background:var(--ink);z-index:13;pointer-events:none}
+/* Barra d'estat (pantalla d'inici de l'iPhone). El meta és «black»: la barra és negra i l'app comença a sota (zona segura de dalt = 0).
+   Les icones posades abans amb «black-translucent» tenen zona segura (47/59 px): s'hi afegeixen 22 px perquè res no quedi a la franja que l'iOS difumina.
+   --sat = on pot començar el contingut · --top = alçada de la franja fixa .topedge (mínim 12 px en vertical). */
+:root{--sat:calc(env(safe-area-inset-top) + min(22px, calc(env(safe-area-inset-top) * 100)));--top:max(12px, var(--sat))}
+/* Franja fixa a dalt, d'un sol color i a tota l'amplada. Ha de rebre tocs (sense pointer-events:none ni pseudo-element):
+   només així l'iOS 26 deixa de difuminar-la. */
+.topedge{position:fixed;left:0;right:0;top:0;height:var(--top);background:var(--ink);z-index:13}
 .defs{position:absolute;width:0;height:0;overflow:hidden}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 [hidden]{display:none!important}
@@ -66,7 +68,7 @@ h1{font-size:15px;font-weight:800;letter-spacing:.01em;text-transform:uppercase;
 .sub{font-size:13px;font-weight:600;color:var(--dim);margin-top:2px}
 .sub:empty{display:none}
 /* En directe la capçalera s'encongeix: el que importa és el tema */
-body.live{padding-top:calc(var(--sat) + 8px)}
+body.live{padding-top:calc(var(--top) + 8px)}
 body.live .setinfo{display:none}
 body.live .logo{width:96px;height:27px}
 body.live .clock{font-size:17px}
@@ -215,7 +217,7 @@ footer{margin-top:28px}
 
 /* ---- A dalt, fix: l'avís «Deshacer» (a dalt perquè no tapi els botons ±10 s, que es toquen seguits) ---- */
 .dock{position:fixed;left:0;right:0;top:0;z-index:30;max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:8px;pointer-events:none;
-  padding:calc(var(--sat) + 8px) calc(env(safe-area-inset-right) + 12px) 0 calc(env(safe-area-inset-left) + 12px)}
+  padding:calc(var(--top) + 8px) calc(env(safe-area-inset-right) + 12px) 0 calc(env(safe-area-inset-left) + 12px)}
 .dock>*{pointer-events:auto}
 .toast{display:flex;align-items:center;gap:10px;padding:6px 6px 6px 14px;background:var(--fg);color:var(--ink);font-size:15px;font-weight:700;box-shadow:0 4px 12px rgba(0,0,0,.5)}
 .toast span{flex:1;min-width:0;line-height:1.2;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
@@ -232,14 +234,14 @@ footer{margin-top:28px}
 .tabbar svg{width:24px;height:24px;flex:none}
 
 /* ---- Setlist: tira fixa a dalt amb el tema que sona i quant li queda ---- */
-.stick{position:sticky;top:0;z-index:6;margin:10px -16px 0;padding:calc(var(--sat) + 6px) 16px 8px;background:var(--ink)}
+.stick{position:sticky;top:0;z-index:6;margin:10px -16px 0;padding:calc(var(--top) + 6px) 16px 8px;background:var(--ink)}
 .strip{display:flex;align-items:center;gap:10px;width:100%;min-height:56px;padding:6px 12px 6px 10px;text-align:left;background:var(--s1);border:1px solid var(--line);border-left:5px solid var(--part)}
 .strip .sx{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
 .strip .sk{font-size:12px;color:var(--orange);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .strip .st{font-size:15px;font-weight:700;color:var(--fg);overflow:hidden;text-overflow:ellipsis}
 .strip .sc{font-size:24px;font-weight:800;color:var(--fg)}
 .strip .sc.soon{color:var(--orange)}
-li{scroll-margin-top:calc(var(--sat) + 84px);scroll-margin-bottom:calc(env(safe-area-inset-bottom) + var(--tabh) + 14px)}
+li{scroll-margin-top:calc(var(--top) + 84px);scroll-margin-bottom:calc(env(safe-area-inset-bottom) + var(--tabh) + 14px)}
 .sl-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:12px 0 4px}
 .sl-h .slinfo{font-size:12px;color:var(--dim)}
 .sl-h button{min-height:44px;padding:6px 18px;font-size:15px}
@@ -290,7 +292,7 @@ p.ok:empty{display:none}
 /* ---- Editor de text (pantalla sencera, a sobre de tot; s'ajusta al teclat amb visualViewport) ---- */
 body.modal{overflow:hidden}
 .ed{position:fixed;z-index:26;left:0;right:0;top:var(--vvt,0px);height:var(--vvh,100dvh);max-width:980px;margin:0 auto;display:flex;flex-direction:column;background:var(--ink);
-  padding:calc(var(--sat) + 8px) calc(env(safe-area-inset-right) + 12px) calc(env(safe-area-inset-bottom) + 8px) calc(env(safe-area-inset-left) + 12px)}
+  padding:calc(var(--top) + 8px) calc(env(safe-area-inset-right) + 12px) calc(env(safe-area-inset-bottom) + 8px) calc(env(safe-area-inset-left) + 12px)}
 body.kb .ed{padding-bottom:6px}
 .ed-h{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center}
 .ed-h h2{font-size:13px;color:var(--bone);text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;outline:0}
@@ -346,7 +348,7 @@ select:focus-visible{outline:3px solid var(--orange);outline-offset:1px}
 
 /* ---- Fitxa d'edició ràpida (des de la pestanya Setlist) ---- */
 .shade{position:fixed;inset:0;z-index:28;background:rgba(0,0,0,.62)}
-.sheet{position:fixed;z-index:29;left:0;right:0;bottom:var(--kb,0px);max-width:640px;margin:0 auto;max-height:calc(var(--vvh,100dvh) - var(--sat) - 8px);overflow:auto;overscroll-behavior:contain;display:grid;gap:10px;
+.sheet{position:fixed;z-index:29;left:0;right:0;bottom:var(--kb,0px);max-width:640px;margin:0 auto;max-height:calc(var(--vvh,100dvh) - var(--top) - 8px);overflow:auto;overscroll-behavior:contain;display:grid;gap:10px;
   padding:14px calc(env(safe-area-inset-right) + 16px) calc(env(safe-area-inset-bottom) + 14px) calc(env(safe-area-inset-left) + 16px);background:var(--s1);border-top:1px solid var(--line2)}
 body.kb .sheet{padding-bottom:12px}
 .sheet h2{font-size:12px;color:var(--dim);outline:0}
@@ -389,7 +391,7 @@ body.qe .bl{display:none}
 
 /* ---- iPhone apaïsat: tema a l'esquerra, el que ve i els botons a la dreta ---- */
 @media (orientation:landscape) and (max-height:500px){
-  :root{--tabh:49px}
+  :root{--tabh:49px;--top:var(--sat)}   /* apaïsat: no hi ha barra d'estat */
   body{max-width:980px;padding-bottom:calc(env(safe-area-inset-bottom) + var(--tabh) + 15px)}
   body.live{padding-top:calc(var(--sat) + 4px)}
   body.live header{margin-bottom:-2px}
@@ -452,6 +454,7 @@ body.qe .bl{display:none}
 </style>
 </head>
 <body>
+<div class="topedge" aria-hidden="true"></div>
 <svg class="defs" aria-hidden="true" width="0" height="0"><defs><g id="um-w"><g style="fill:var(--logo-c,#D6D0BA)"><path d="M651.3 268.9L703.6 268.9L703.6 473.8L651.3 473.8ZM836.8 398.4L757 268.9L711.9 268.9L711.9 473.8L762 473.8L760.6 348.6L839.2 473.8L884.7 473.8L884.7 268.9L834.5 268.9ZM944.7 268.9L892.9 268.9L892.9 473.8L945.2 473.8L945.2 457.1C936.9 450.4 931.5 440.1 931.5 428.5C931.5 417 936.9 406.7 945.2 400L945.2 345.8L945.8 345.8L973.5 392.4C991.1 395 1004.7 410.2 1004.7 428.5C1004.7 432.8 1003.9 437 1002.5 440.8L1004.5 444.1L1022.5 473.8L1085.3 473.8ZM328.7 397.5L328.7 268.9L276.9 268.9L199.6 381.5L199.1 381.5L199.1 268.9L147.3 268.9L6.6 473.8L66.7 473.8L146.2 351.6L146.8 351.6L146.8 473.8L190.2 473.8L275.8 351.6L276.4 351.6L276.4 473.8L276.4 473.8L328.7 473.8L339.2 473.8L357.2 444.1L358.9 441.2C357.5 437.3 356.6 433 356.6 428.5C356.6 410 370.4 394.7 388.3 392.3L415.9 345.8L416.5 345.8L416.5 400.3C424.6 407 429.8 417.1 429.8 428.5C429.8 439.9 424.6 450 416.5 456.8L416.5 473.8L468.8 473.8L468.8 268.9L417 268.9ZM188 260.6C200.2 260.6 210.5 256.3 219 247.8C227.6 239.3 231.9 228.9 231.9 216.8L231.9 169.6L206.8 169.6L206.8 219.1C206.8 224.2 205 228.6 201.3 232.3C197.6 236 193.2 237.8 188 237.8C182.9 237.8 178.5 236 174.8 232.3C171.1 228.6 169.3 224.2 169.3 219.1L169.3 169.6L144.2 169.6L144.2 216.8C144.2 228.9 148.5 239.3 157 247.8C165.6 256.3 175.9 260.6 188 260.6M262.6 211.1C262.6 205.9 264.4 201.5 268.1 197.9C271.8 194.2 276.2 192.3 281.4 192.3C286.5 192.3 290.9 194.2 294.6 197.9C298.3 201.5 300.1 205.9 300.1 211.1L300.1 260.6L325.2 260.6L325.2 213.4C325.2 201.2 320.9 190.9 312.4 182.4C303.8 173.8 293.5 169.6 281.4 169.6C269.2 169.6 258.9 173.8 250.3 182.4C241.8 190.9 237.5 201.2 237.5 213.4L237.5 260.6L262.6 260.6ZM355.9 169.6L330.9 169.6L330.9 260.6L355.9 260.6ZM492.5 260.6L582.4 260.6L582.4 237.8L492.5 237.8C487.5 237.8 483.4 236 480.2 232.4C477.1 228.8 475.5 223.1 475.5 215.1C475.5 207.1 477.1 201.3 480.2 197.7C483.4 194.1 487.5 192.3 492.5 192.3L550 192.3C552.1 192.3 553.9 192.9 555.3 194.1C556.7 195.3 557.4 196.7 557.4 198.4C557.4 199.9 556.7 201.3 555.3 202.5C553.9 203.7 552.1 204.3 550 204.3L486.9 204.3L486.9 225.9L550 225.9C559.8 225.9 567.6 223.1 573.6 217.6C579.5 212.1 582.4 205.6 582.4 198.4C582.4 196.3 582.1 194.1 581.5 191.7C580.8 189.3 579.7 186.8 578.1 184.1C576.5 181.5 574.5 179.1 572.1 177C569.8 174.8 566.6 173.1 562.8 171.7C559 170.3 554.7 169.6 550 169.6L492.5 169.6C464.5 169.6 450.4 184.7 450.4 215.1C450.4 245.4 464.5 260.6 492.5 260.6M733.5 260.6L786.1 260.6C794.9 260.6 802.1 257.8 807.5 252.3C813 246.8 815.7 240.4 815.7 233.3C815.7 225.8 812.7 219.4 806.7 214C800.7 208.7 793.9 206 786.1 206L753.1 206C750.7 206 748.8 205.3 747.3 203.9C745.9 202.6 745.2 201 745.2 199.1C745.2 197.3 745.9 195.7 747.3 194.4C748.8 193 750.7 192.3 753.1 192.3L815.7 192.3L815.7 169.6L750.8 169.6C745.8 169.6 741.3 170.4 737.4 172.2C733.4 173.9 730.2 176.2 727.7 179.1C725.2 181.9 723.3 185.1 722.1 188.5C720.8 192 720.1 195.5 720.1 199.1C720.1 207.7 723 214.8 728.9 220.4C734.7 225.9 742 228.7 750.8 228.7L784.4 228.7C786 228.7 787.5 229.4 788.7 230.6C790 231.9 790.7 233.3 790.7 235C790.7 236.7 790 238.1 788.7 239.4C787.5 240.6 786 241.3 784.4 241.3L733.5 241.3L720.1 241.3L650.1 241.3C648.5 241.3 647.1 240.6 645.8 239.4C644.5 238.1 643.9 236.7 643.9 235C643.9 233.3 644.5 231.9 645.8 230.6C647.1 229.4 648.5 228.7 650.1 228.7L683.7 228.7C692.5 228.7 699.8 225.9 705.7 220.4C711.5 214.8 714.4 207.7 714.4 199.1C714.4 195.5 713.8 192 712.5 188.5C711.2 185.1 709.3 181.9 706.9 179.1C704.4 176.2 701.2 173.9 697.2 172.2C693.2 170.4 688.7 169.6 683.7 169.6L625.7 169.6C615.3 169.6 606.4 172.9 599.1 179.6C591.8 186.3 588.1 194.3 588.1 203.7L588.1 260.6L613.2 260.6L613.2 203.7C613.2 200.6 614.4 197.9 616.8 195.7C619.2 193.4 622.2 192.3 625.7 192.3L681.4 192.3C683.9 192.3 685.8 193 687.2 194.4C688.7 195.7 689.4 197.3 689.4 199.1C689.4 201 688.7 202.6 687.2 203.9C685.8 205.3 683.9 206 681.4 206L648.4 206C640.7 206 633.8 208.7 627.8 214C621.8 219.4 618.8 225.8 618.8 233.3C618.8 240.4 621.6 246.8 627 252.3C632.5 257.8 639.6 260.6 648.4 260.6L720.1 260.6ZM850 197.7C853.2 194.1 857.3 192.3 862.3 192.3L910.1 192.3C915.1 192.3 919.2 194.1 922.4 197.7C925.6 201.3 927.2 207.1 927.2 215.1C927.2 223.1 925.6 228.8 922.4 232.4C919.2 236 915.1 237.8 910.1 237.8L862.3 237.8C857.3 237.8 853.2 236 850 232.4C846.8 228.8 845.2 223.1 845.2 215.1C845.2 207.1 846.8 201.3 850 197.7M862.3 260.6L910.1 260.6C938.2 260.6 952.2 245.4 952.2 215.1C952.2 184.7 938.2 169.6 910.1 169.6L862.3 169.6C834.2 169.6 820.2 184.7 820.2 215.1C820.2 245.4 834.2 260.6 862.3 260.6M427.7 169.6C427.7 169.6 412.2 218.1 409.1 227.8C408.9 228.4 408.2 228.4 408 227.8C404.9 218.1 389.4 169.6 389.4 169.6L361.6 169.6L380 229.8C383.1 239.8 386.9 247.2 391.6 252.3C396.6 257.8 402.3 260.6 408.5 260.6C414.8 260.6 420.5 257.8 425.5 252.3C430.1 247.3 434.1 239.7 437.1 229.7L455.5 169.6ZM586.3 473.8L530.1 385.1L529.6 385.1L529.6 473.8L477 473.8L477 268.9L529.6 268.9L529.6 361.1L530.1 361.1L588.2 268.9L643.2 268.9L575.1 371L647.7 473.8Z"/></g><g style="fill:var(--logo-o,#FF4514)"><path d="M393.2 457.6C377.1 457.6 364.1 444.6 364.1 428.5C364.1 412.5 377.1 399.4 393.2 399.4C409.2 399.4 422.3 412.5 422.3 428.5C422.3 444.6 409.2 457.6 393.2 457.6M968.1 457.6C952 457.6 939 444.6 939 428.5C939 412.5 952 399.4 968.1 399.4C984.1 399.4 997.2 412.5 997.2 428.5C997.2 444.6 984.1 457.6 968.1 457.6"/></g></g><g id="um-l" style="fill:var(--logo-l,#FF4514)"><path d="M885.2 504.8L830.5 599.7L261.5 599.7L206.8 504.8L266.4 401.6L266.4 389.6L200.7 503.3L199.8 504.8L258.1 605.7L833.9 605.7L892.2 504.8L880 483.8L873.1 483.8ZM491.2 12.1L600.8 12.1L685.9 159.6C688.5 159.7 691 160.1 693.4 160.6L605.1 7.6L604.2 6.1L487.8 6.1L397.6 162.4C398.1 164.2 399 166.9 400 170.1ZM820.9 504.8L798.3 543.9L293.7 543.9L271.1 504.8L283.3 483.8L276.4 483.8L265.1 503.3L264.2 504.8L290.2 549.9L801.8 549.9L827.8 504.8L771.2 406.9L771.4 419.1ZM467.6 164.3C467.6 164.3 467.7 164.2 467.8 164.2L523.4 67.9L568.6 67.9L621.6 159.7C623 159.6 624.3 159.6 625.7 159.6L628.5 159.6L572.9 63.4L572 61.9L520 61.9L463.5 159.6L469 159.6ZM507.2 39.7L584.8 39.7L654 159.6L661 159.6L589.2 35.2L588.3 33.7L503.7 33.7L431 159.6L438 159.6ZM853.3 504.8L814.5 572.1L277.5 572.1L238.6 504.8L266.4 456.8L266.4 444.8L231.7 504.8L274 578.1L818 578.1L860.3 504.8L848.1 483.8L841.2 483.8ZM539.5 95.7L552.5 95.7L595.2 169.8C596.9 168.5 598.5 167.4 600.2 166.4L556.8 91.2L556 89.7L536 89.7L495.7 159.6L502.6 159.6ZM788.7 504.8L782.2 516.1L309.8 516.1L303.3 504.8L315.5 483.8L308.5 483.8L297.2 503.3L296.4 504.8L306.3 522.1L785.7 522.1L795.6 504.8L771.9 463.7L772 475.9Z"/></g><symbol id="um-full" viewBox="0 0 1091 612"><use href="#um-l"/><use href="#um-w"/></symbol><symbol id="um-word" viewBox="5 168 1082 308"><use href="#um-w"/></symbol><symbol id="um-tri" viewBox="0 0 700 610"><path d="M64.9 596.7L633.8 596.7L688.6 501.8L404.1 9.1L294.6 9.1L10.1 501.8ZM637.3 602.7L61.4 602.7L3.2 501.8L4 500.3L291.1 3.1L407.6 3.1L408.4 4.6L695.5 501.8ZM97.1 540.9L601.6 540.9L624.2 501.8L371.9 64.9L326.7 64.9L74.5 501.8ZM605.1 546.9L93.6 546.9L67.5 501.8L323.3 58.9L375.4 58.9L376.2 60.4L631.1 501.8ZM113.1 513.1L585.5 513.1L592 501.8L355.8 92.7L342.8 92.7L106.6 501.8ZM589 519.1L109.7 519.1L99.7 501.8L339.4 86.7L359.3 86.7L360.2 88.2L599 501.8ZM80.9 568.9L617.8 568.9L656.5 501.8L388.1 36.8L310.6 36.8L42.1 501.8ZM621.2 574.9L77.4 574.9L35.2 501.8L307.1 30.8L391.5 30.8L392.4 32.3L663.5 501.8Z"/></symbol><symbol id="um-bell" viewBox="0 0 24 24"><path d="M12 3.5a5.5 5.5 0 0 0-5.5 5.5v3.7L4.6 16.2h14.8l-1.9-3.5V9A5.5 5.5 0 0 0 12 3.5Z" fill="var(--bf,none)" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M9.7 19.2a2.4 2.4 0 0 0 4.6 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol></defs></svg>
 <header>
   <svg class="logo" role="img" aria-label="Universo Makina"><use href="#um-word"/></svg>
