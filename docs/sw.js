@@ -1,6 +1,6 @@
 /* Service worker de Universo Makina: l'app s'obre sense cobertura.
    build.py posa a VERSION una empremta del contingut → si canvia res, el mòbil baixa la versió nova la propera vegada que té xarxa. */
-const VERSION = 'e5a8e506';
+const VERSION = 'c245fb74';
 const CACHE = 'um-' + VERSION;
 const FILES = ['./', 'manifest.webmanifest', 'assets/icons/icon-192.png', 'assets/icons/icon-512.png', 'assets/icons/apple-touch-icon.png'];
 

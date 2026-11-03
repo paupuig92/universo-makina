@@ -1245,32 +1245,43 @@ if (BUILD) { const d = new Date(BUILD.d); setText($('ver'), `Versión del ${pad(
 // Amb poca cobertura no s'ha de quedar penjat: com a molt 8 s per buscar (navigator.onLine a l'iPhone sovint diu «sí» sense xarxa).
 let updAsk = false, updReady = false;
 const within = (p, ms) => Promise.race([p, new Promise((_, no) => setTimeout(() => no(new Error('temps')), ms))]);
+// Quina versió hi ha al servidor? (llegeix VERSION de sw.js, sense memòries pel mig). null = sense xarxa
+const serverVer = () => within(fetch('sw.js?v=' + Date.now(), { cache: 'no-store' }), 8000)
+  .then(r => r.ok ? r.text() : null).then(t => t && (t.match(/const VERSION = '([^']*)'/) || [])[1] || null).catch(() => null);
+// Porta l'app a la versió del servidor i recarrega. Primer pel camí normal (service worker nou);
+// si en 20 s no hi és, esborra la memòria offline i recarrega de la xarxa: així mai es queda enganxada una versió vella
+async function goUpdate(v) {
+  updAsk = true;
+  const SW = navigator.serviceWorker, reg = await SW?.getRegistration().catch(() => null);
+  if (reg) {
+    reg.update().catch(() => {});
+    const t0 = Date.now();
+    while (Date.now() - t0 < 20000) {
+      if (reg.waiting) reg.waiting.postMessage('skip');
+      // la nova ja mana quan la seva memòria hi és i la de la versió d'aquesta pàgina ja s'ha esborrat (ho fa el service worker en activar-se)
+      if (await caches.has('um-' + v).catch(() => false) && !(BUILD && await caches.has('um-' + BUILD.v).catch(() => false)) && !reg.installing && !reg.waiting) return location.reload();
+      await new Promise(r => setTimeout(r, 500));
+    }
+    try { for (const k of await caches.keys()) if (k.startsWith('um-') && k !== 'um-fonts') await caches.delete(k); await reg.unregister(); } catch {}
+  }
+  location.replace(location.pathname + '?u=' + Date.now());   // adreça nova: res de memòries pel mig
+}
+if (/[?&]u=\d/.test(location.search)) history.replaceState(null, '', location.pathname);
 $('bUpd').onclick = async () => {
   const st = t => setText($('updS'), t), b = $('bUpd');
-  const fail = () => { b.disabled = false; st('Sin conexión. Prueba cuando tengas cobertura.'); };
-  if (navigator.onLine === false) return fail();
-  const reg = await navigator.serviceWorker?.getRegistration().catch(() => null);
-  if (!reg) { location.reload(); return; }
-  st('Buscando…'); b.disabled = true;
-  try { await within(reg.update(), 8000); } catch { return fail(); }
-  const nw = reg.installing || reg.waiting;
-  if (!nw) { b.disabled = false; return st('Ya tienes la última versión.'); }
-  updAsk = true; st('Actualizando…');
-  if (nw.state === 'installed') nw.postMessage('skip');
-  if (nw.state === 'activated') return location.reload();
-  nw.addEventListener('statechange', () => { if (nw.state === 'installed') nw.postMessage('skip'); if (nw.state === 'activated') location.reload(); });
-  setTimeout(() => { if (!updAsk) return; updAsk = false; b.disabled = false; st('No se ha podido actualizar. Prueba otra vez.'); }, 30000);
+  b.disabled = true; st('Buscando…');
+  const v = await serverVer();
+  if (!v) { b.disabled = false; return st('Sin conexión. Prueba cuando tengas cobertura.'); }
+  if (BUILD && v === BUILD.v) { b.disabled = false; return st('Ya tienes la última versión.'); }
+  st('Actualizando…');
+  goUpdate(v);
 };
 // Versió nova amb l'app oberta i un tema sonant (o l'editor obert): no es recarrega sola, surt l'avís amb «Actualizar»
 function offerUpd() {
   updReady = true;
   if (document.body.classList.contains('modal') || undoKind === 'upd') return;
   if (!$('toast').hidden && undoKind) return;   // primer marxa el «Deshacer» que hi ha
-  toast('Versión nueva', 'upd', async () => {
-    updAsk = true;
-    const reg = await navigator.serviceWorker?.getRegistration().catch(() => null);
-    if (reg?.waiting) reg.waiting.postMessage('skip'); else location.reload();
-  }, 'Actualizar', true);
+  toast('Versión nueva', 'upd', async () => { const v = await serverVer(); if (v) goUpdate(v); else location.reload(); }, 'Actualizar', true);
 }
 
 // ==== Editor del setlist ====
@@ -1725,10 +1736,15 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   const checkUpd = () => {
     if (document.hidden || Date.now() - checked < 30000) return;
     checked = Date.now();
-    SW.getRegistration().then(async r => { if (!r) return; await within(r.update(), 8000).catch(() => {}); if (r.waiting && SW.controller) offerUpd(); }).catch(() => {});
+    serverVer().then(v => {
+      if (!v || !BUILD || v === BUILD.v || updAsk) return;
+      // Hi ha versió nova: sense cap tema sonant ni l'editor obert, s'actualitza sola; si no, avís «Versión nueva»
+      if (last < 0 && !document.body.classList.contains('modal')) goUpdate(v); else offerUpd();
+    });
   };
   window.checkUpd = checkUpd;
   setInterval(checkUpd, 120000);
+  setTimeout(checkUpd, 3000);
   document.addEventListener('visibilitychange', checkUpd);
 }
 </script>
