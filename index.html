@@ -42,10 +42,13 @@ body{
   color:var(--fg);font:500 16px/1.3 var(--font);-webkit-font-smoothing:antialiased;background:var(--ink);
   max-width:640px;margin:0 auto;min-height:100vh;
   /* a baix hi ha lloc per a la barra de pestanyes (fixa) */
-  padding:calc(env(safe-area-inset-top) + 14px) calc(env(safe-area-inset-right) + 16px) calc(env(safe-area-inset-bottom) + var(--tabh) + 23px) calc(env(safe-area-inset-left) + 16px);
+  padding:calc(var(--sat) + 14px) calc(env(safe-area-inset-right) + 16px) calc(env(safe-area-inset-bottom) + var(--tabh) + 23px) calc(env(safe-area-inset-left) + 16px);
 }
 /* App a la pantalla d'inici (barra d'estat transparent): res no passa per sota del rellotge i la bateria */
-body:after{content:"";position:fixed;left:0;right:0;top:0;height:env(safe-area-inset-top);background:var(--ink);z-index:13;pointer-events:none}
+:root{--sat:env(safe-area-inset-top)}
+/* Pantalla d'inici (iPhone): l'iOS difumina una franja sota la barra d'estat; el contingut comença més avall i la franja queda negra */
+@media (display-mode:standalone) and (orientation:portrait){:root{--sat:calc(env(safe-area-inset-top) + 22px)}}
+body:after{content:"";position:fixed;left:0;right:0;top:0;height:var(--sat);background:var(--ink);z-index:13;pointer-events:none}
 .defs{position:absolute;width:0;height:0;overflow:hidden}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 [hidden]{display:none!important}
@@ -64,7 +67,7 @@ h1{font-size:15px;font-weight:800;letter-spacing:.01em;text-transform:uppercase;
 .sub{font-size:13px;font-weight:600;color:var(--dim);margin-top:2px}
 .sub:empty{display:none}
 /* En directe la capçalera s'encongeix: el que importa és el tema */
-body.live{padding-top:calc(env(safe-area-inset-top) + 8px)}
+body.live{padding-top:calc(var(--sat) + 8px)}
 body.live .setinfo{display:none}
 body.live .logo{width:96px;height:27px}
 body.live .clock{font-size:17px}
@@ -212,7 +215,7 @@ footer{margin-top:28px}
 
 /* ---- A dalt, fix: l'avís «Deshacer» (a dalt perquè no tapi els botons ±10 s, que es toquen seguits) ---- */
 .dock{position:fixed;left:0;right:0;top:0;z-index:30;max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:8px;pointer-events:none;
-  padding:calc(env(safe-area-inset-top) + 8px) calc(env(safe-area-inset-right) + 12px) 0 calc(env(safe-area-inset-left) + 12px)}
+  padding:calc(var(--sat) + 8px) calc(env(safe-area-inset-right) + 12px) 0 calc(env(safe-area-inset-left) + 12px)}
 .dock>*{pointer-events:auto}
 .toast{display:flex;align-items:center;gap:10px;padding:6px 6px 6px 14px;background:var(--fg);color:var(--ink);font-size:15px;font-weight:700;box-shadow:0 4px 12px rgba(0,0,0,.5)}
 .toast span{flex:1;min-width:0;line-height:1.2;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
@@ -229,14 +232,14 @@ footer{margin-top:28px}
 .tabbar svg{width:24px;height:24px;flex:none}
 
 /* ---- Setlist: tira fixa a dalt amb el tema que sona i quant li queda ---- */
-.stick{position:sticky;top:0;z-index:6;margin:10px -16px 0;padding:calc(env(safe-area-inset-top) + 6px) 16px 8px;background:var(--ink)}
+.stick{position:sticky;top:0;z-index:6;margin:10px -16px 0;padding:calc(var(--sat) + 6px) 16px 8px;background:var(--ink)}
 .strip{display:flex;align-items:center;gap:10px;width:100%;min-height:56px;padding:6px 12px 6px 10px;text-align:left;background:var(--s1);border:1px solid var(--line);border-left:5px solid var(--part)}
 .strip .sx{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
 .strip .sk{font-size:12px;color:var(--orange);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .strip .st{font-size:15px;font-weight:700;color:var(--fg);overflow:hidden;text-overflow:ellipsis}
 .strip .sc{font-size:24px;font-weight:800;color:var(--fg)}
 .strip .sc.soon{color:var(--orange)}
-li{scroll-margin-top:calc(env(safe-area-inset-top) + 84px);scroll-margin-bottom:calc(env(safe-area-inset-bottom) + var(--tabh) + 14px)}
+li{scroll-margin-top:calc(var(--sat) + 84px);scroll-margin-bottom:calc(env(safe-area-inset-bottom) + var(--tabh) + 14px)}
 .sl-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:12px 0 4px}
 .sl-h .slinfo{font-size:12px;color:var(--dim)}
 .sl-h button{min-height:44px;padding:6px 18px;font-size:15px}
@@ -287,7 +290,7 @@ p.ok:empty{display:none}
 /* ---- Editor de text (pantalla sencera, a sobre de tot; s'ajusta al teclat amb visualViewport) ---- */
 body.modal{overflow:hidden}
 .ed{position:fixed;z-index:26;left:0;right:0;top:var(--vvt,0px);height:var(--vvh,100dvh);max-width:980px;margin:0 auto;display:flex;flex-direction:column;background:var(--ink);
-  padding:calc(env(safe-area-inset-top) + 8px) calc(env(safe-area-inset-right) + 12px) calc(env(safe-area-inset-bottom) + 8px) calc(env(safe-area-inset-left) + 12px)}
+  padding:calc(var(--sat) + 8px) calc(env(safe-area-inset-right) + 12px) calc(env(safe-area-inset-bottom) + 8px) calc(env(safe-area-inset-left) + 12px)}
 body.kb .ed{padding-bottom:6px}
 .ed-h{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center}
 .ed-h h2{font-size:13px;color:var(--bone);text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;outline:0}
@@ -343,7 +346,7 @@ select:focus-visible{outline:3px solid var(--orange);outline-offset:1px}
 
 /* ---- Fitxa d'edició ràpida (des de la pestanya Setlist) ---- */
 .shade{position:fixed;inset:0;z-index:28;background:rgba(0,0,0,.62)}
-.sheet{position:fixed;z-index:29;left:0;right:0;bottom:var(--kb,0px);max-width:640px;margin:0 auto;max-height:calc(var(--vvh,100dvh) - env(safe-area-inset-top) - 8px);overflow:auto;overscroll-behavior:contain;display:grid;gap:10px;
+.sheet{position:fixed;z-index:29;left:0;right:0;bottom:var(--kb,0px);max-width:640px;margin:0 auto;max-height:calc(var(--vvh,100dvh) - var(--sat) - 8px);overflow:auto;overscroll-behavior:contain;display:grid;gap:10px;
   padding:14px calc(env(safe-area-inset-right) + 16px) calc(env(safe-area-inset-bottom) + 14px) calc(env(safe-area-inset-left) + 16px);background:var(--s1);border-top:1px solid var(--line2)}
 body.kb .sheet{padding-bottom:12px}
 .sheet h2{font-size:12px;color:var(--dim);outline:0}
@@ -388,7 +391,7 @@ body.qe .bl{display:none}
 @media (orientation:landscape) and (max-height:500px){
   :root{--tabh:49px}
   body{max-width:980px;padding-bottom:calc(env(safe-area-inset-bottom) + var(--tabh) + 15px)}
-  body.live{padding-top:calc(env(safe-area-inset-top) + 4px)}
+  body.live{padding-top:calc(var(--sat) + 4px)}
   body.live header{margin-bottom:-2px}
   body.live .logo{width:80px;height:23px}
   .setinfo{display:none}

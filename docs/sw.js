@@ -1,6 +1,6 @@
 /* Service worker de Universo Makina: l'app s'obre sense cobertura.
    build.py canvia VERSION a cada build → el mòbil baixa la nova versió la propera vegada que té xarxa. */
-const VERSION = '20261103-131534-467684d0';
+const VERSION = '20261103-132300-631e5a74';
 const CACHE = 'um-' + VERSION;
 const FONTS = 'um-fonts';   // la lletra (Google Fonts) es guarda a part: no cal tornar-la a baixar a cada versió
 const FILES = ['./', 'manifest.webmanifest', 'assets/icons/icon-192.png', 'assets/icons/icon-512.png', 'assets/icons/apple-touch-icon.png'];
