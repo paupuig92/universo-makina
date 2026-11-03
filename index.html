@@ -43,6 +43,11 @@ body{
 }
 /* Sense zoom amb doble toc ni pinça (és una eina, no una web) */
 html{touch-action:pan-x pan-y;-webkit-text-size-adjust:100%}
+/* Sense arrossegar de costat («clip» i no «hidden»: no trenca els sticky) */
+html,body{overflow-x:clip}
+html{overscroll-behavior-x:none}
+/* Mantenir premut un botó no selecciona text ni obre la lupa (mai als camps de text) */
+button,.tabbar,.strip,.bl{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 /* Barra d'estat (pantalla d'inici de l'iPhone). El meta és «black»: la barra és negra i l'app comença a sota (zona segura de dalt = 0).
    Les icones posades abans amb «black-translucent» tenen zona segura (47/59 px): s'hi afegeixen 22 px perquè res no quedi a la franja que l'iOS difumina.
    --sat = on pot començar el contingut · --top = alçada de la franja fixa .topedge (mínim 12 px en vertical). */
@@ -290,7 +295,7 @@ p.ok:empty{display:none}
 #tab-setlist .cfm{margin:0 0 8px}
 
 /* ---- Editor de text (pantalla sencera, a sobre de tot; s'ajusta al teclat amb visualViewport) ---- */
-body.modal{overflow:hidden}
+body.modal,html:has(>body.modal){overflow:hidden}   /* amb overflow a l'html, el bloqueig ha d'anar també a l'html */
 .ed{position:fixed;z-index:26;left:0;right:0;top:var(--vvt,0px);height:var(--vvh,100dvh);max-width:980px;margin:0 auto;display:flex;flex-direction:column;background:var(--ink);
   padding:calc(var(--top) + 8px) calc(env(safe-area-inset-right) + 12px) calc(env(safe-area-inset-bottom) + 8px) calc(env(safe-area-inset-left) + 12px)}
 body.kb .ed{padding-bottom:6px}
@@ -1683,6 +1688,8 @@ keepAwake();
 // Sense cobertura: el service worker guarda l'app al mòbil. Si arriba una versió nova i no hi ha cap tema sonant, es recarrega sola.
 // iOS: la pinça també fa zoom encara que el CSS digui que no
 document.addEventListener('gesturestart', e => e.preventDefault());
+// Sense cap touchstart, Safari no aplica :active (els botons no responen en tocar-los)
+document.addEventListener('touchstart', () => {}, { passive: true });
 
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   const SW = navigator.serviceWorker;
