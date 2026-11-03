@@ -12,7 +12,7 @@
 ## 2. D'on ve (prova pilot)
 - 31-10-2026, dins la Midnight App (festival «La Castanyada del Cabró Rock», Montmeló), al **perfil de vídeo «Pau»**, com a tasques de «Mi plan».
 - Set makina de **00:00 a 05:00**, amb **199 temes** en **5 parts de colors** (rosa, cian, verd, lila, taronja) i cada cançó separada.
-- Setlist original (Google Doc): https://docs.google.com/document/d/1rxmi115IWnJVOizgEB2TgBdN8tKTS5QMb9KrNWtg9xc/edit
+- Setlist original: Google Doc d'en Pau (enllaç fora del repo).
 - ⚠️ **Les hores de cada tema NO són reals.** Dins de cada tram de 30 min es van repartir a parts iguals. Per a la gira caldran les hores reals, o un botó per sincronitzar en directe.
 - Com ho tractava la Midnight App:
   - Un tema que dura menys de 5 min és una **«cue»**: quan passa, passa. No surt com a «tarde», no avisa i no compta per a la feina feta.
