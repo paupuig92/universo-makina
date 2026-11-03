@@ -27,9 +27,11 @@ Neix de la prova del set makina dins la Midnight App (31-10-2026, perfil Pau, 19
 - `+1`, `-2`… al davant del títol = marca d'en Pau (es mostra com a etiqueta).
 
 ## Com funciona
-- Barra de pestanyes a baix: **Ahora** (tema, compte enrere, «Siguientes» i botons `−10 s / +10 s / Prevista / Reiniciar`, sempre just a sobre de la barra), **Setlist** (s'obre al tema que sona; tira fixa a dalt amb tema + temps) i **Ajustes**. Es recorda l'última pestanya.
-- L'app va sola amb el rellotge del mòbil. Hora d'inici que mana, per ordre: 1) sincronitzat a mà (**Empezar ahora**, ±10 s) → 2) data i hora posades a **Ajustes → Inicio** (es guarda en aquell mòbil) → 3) l'`inici` del `set.json`.
-- Guardar una data/hora nova a Ajustes treu l'ajust a mà (pregunta abans). «Usar la del archivo» torna a l'`inici`. «Prevista» / «Quitar ajuste» treu només l'ajust a mà. El desfase es mostra amb el signe dels botons (−0:20 = el set va 20 s enrere).
+- Barra de pestanyes a baix: **Ahora** (tema, compte enrere, «Siguientes» i botons `−10 s / +10 s / Programado / Parar` en directe i `Empezar` + `−10 s / +10 s / Programado` abans o parat, sempre just a sobre de la barra), **Setlist** (s'obre al tema que sona; tira fixa a dalt amb tema + temps) i **Ajustes**. Es recorda l'última pestanya.
+- L'app va sola amb el rellotge del mòbil. Hora d'inici que mana, per ordre: 0) **Parar** (passa per sobre de tot) → 1) sincronitzat a mà (**Empezar**, ±10 s) → 2) data i hora posades a **Ajustes → Inicio** (es guarda en aquell mòbil) → 3) l'`inici` del `set.json`.
+- Guardar una data/hora nova a Ajustes treu l'ajust a mà (pregunta abans). «Usar la del archivo» torna a l'`inici`. «Programado» (Ahora i Ajustes) treu l'ajust a mà i el «Parado» i torna a l'hora programada. El desfase es mostra amb el signe dels botons (−0:20 = el set va 20 s enrere).
+- **Parar** (en directe, també en Pausa): dos tocs en 3 s («¿Parar?»), l'app deixa de seguir el rellotge i surt **«Parado»** amb el botó gran **Empezar**. Es guarda per set a `um.stop.<id>` (aguanta recarregar) i no toca l'ajust a mà ni l'hora guardada (Deshacer ho torna exacte). El treuen: **Empezar**, **Programado** i guardar data/hora (o «Usar la del archivo») a Ajustes. Parat no surten avisos. També a **Ajustes → Directo** (amb «Reiniciar ahora», dos tocs, i «Programado»).
+- Per què «Prevista» ja no hi és: en Pau va triar `Empezar / Parar / Programado`; «Reiniciar» només és a Ajustes (Parar + Empezar fan el mateix des d'Ahora). Les columnes de la fila no són iguals (`.8/.8/1.5/.9fr`) perquè «Programado» hi càpiga a 375 px i apaïsat.
 - A Ajustes també: **Avisos** (a sota), dades del set i versió. L'avís «Deshacer» surt a dalt (no tapa els botons).
 - Entre dos temes amb forat (fi < inici del següent) surt **«Pausa»** amb el compte enrere al següent. «Fin del set» només després de l'últim tema.
 
@@ -54,7 +56,7 @@ Neix de la prova del set makina dins la Midnight App (31-10-2026, perfil Pau, 19
 
 ## Disseny (regles: mantenir-les en qualsevol canvi)
 Com els cartells d'UM, sec i sense «capa IA». Les regles també són al principi del `<style>` d'`index.html`.
-- **Colors**: negre càlid `--ink`, crema (`--fg`, `--bone`), grisos `--dim`/`--mute`. **Un sol taronja** `#ff4514` per al grafisme (▲, barra de pestanyes, progrés, rètols petits) i l'**acció principal** (Empezar ahora, Guardar de l'editor, Reiniciar armat, errors/borrar). Seleccions (segments, marques, interruptors) en crema, no taronja.
+- **Colors**: negre càlid `--ink`, crema (`--fg`, `--bone`), grisos `--dim`/`--mute`. **Un sol taronja** `#ff4514` per al grafisme (▲, barra de pestanyes, progrés, rètols petits) i l'**acció principal** (Empezar, Guardar de l'editor, Parar/Reiniciar armat, errors/borrar). Seleccions (segments, marques, interruptors) en crema, no taronja.
 - **Color de part només on és dada**: barra de parts, etiqueta «PARTE N», hora i línia de la llista, franja i separador de canvi de part. El marc, la barra de pestanyes i la resta són sempre taronja/crema.
 - **Formes**: cantonades rectes a tot arreu (sense targetes arrodonides). Info en blocs separats per **una** línia d'1 px. Un sol panell per pantalla (el tema actual).
 - **Lletra**: Helvetica Neue bold. Rètols petits en MAJÚSCULES amb `letter-spacing` ≤ .03em (mai espaiats amples, mai condensada). Compte enrere i títol del tema sense cap adorn, grans i llegibles.

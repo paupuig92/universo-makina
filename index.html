@@ -189,17 +189,18 @@ li.cur .t,li.cur .n{color:var(--fg)}
 .part-h .pm b{color:var(--fg);font-weight:800}
 
 /* ---- Sincronització: la fila sempre queda just a sobre de la barra de pestanyes ---- */
-.tools{position:sticky;z-index:5;bottom:calc(env(safe-area-inset-bottom) + var(--tabh));display:grid;grid-template-columns:repeat(3,1fr);gap:8px;
+.tools{position:sticky;z-index:5;bottom:calc(env(safe-area-inset-bottom) + var(--tabh));display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.5fr);gap:8px;
   margin:6px -16px 0;padding:12px 16px 8px;background:var(--ink);box-shadow:0 -1px 0 var(--line)}
-body.live .tools{grid-template-columns:repeat(4,1fr)}
+body.live .tools{grid-template-columns:minmax(0,.8fr) minmax(0,.8fr) minmax(0,1.5fr) minmax(0,.9fr)}   /* «Programado» és el més llarg */
 body.live #bStart{display:none}
-#bRestart{display:none}
-body.live #bRestart{display:flex}
+#bStop{display:none}
+body.live #bStop{display:flex}
+body:not(.live) #aStop{display:none}
 button{font:inherit;font-size:16px;font-weight:700;color:var(--bone);background:var(--s2);border:1px solid var(--line);border-radius:0;min-height:52px;padding:8px 10px;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;font-variant-numeric:tabular-nums;white-space:nowrap}
 button:active{background:#2a231e}
 button:disabled{opacity:.4;cursor:default}
 .tools button:not(.go){display:flex;align-items:center;justify-content:center;padding:6px 2px;font-size:16px;font-weight:800;min-width:0}
-#bRestart.arm{background:var(--orange);border-color:var(--orange);color:var(--ink)}
+#bStop.arm,#aStop.arm{background:var(--orange);border-color:var(--orange);color:var(--ink)}
 button.go{grid-column:1/-1;min-height:60px;background:var(--orange);border-color:var(--orange);color:var(--ink);font-size:18px;font-weight:800;letter-spacing:.02em;text-transform:uppercase}
 button.go:active{background:#e23a0d}
 .note{grid-column:1/-1;font-size:13px;font-weight:700;color:var(--dim)}
@@ -465,11 +466,11 @@ body.qe .bl{display:none}
 <div class="stage">
 <main id="main"></main>
 <div class="tools">
-  <button class="go" id="bStart">Empezar ahora</button>
+  <button class="go" id="bStart">Empezar</button>
   <button id="bMinus" aria-label="Retrasar el set 10 segundos">−10&nbsp;s</button>
   <button id="bPlus" aria-label="Adelantar el set 10 segundos">+10&nbsp;s</button>
-  <button id="bReset" aria-label="Volver a la hora prevista">Prevista</button>
-  <button id="bRestart" aria-label="Reiniciar: el set empieza ahora (toca dos veces)">Reiniciar</button>
+  <button id="bReset" aria-label="Volver a la hora programada">Programado</button>
+  <button id="bStop" aria-label="Parar: deja de seguir el reloj (toca dos veces)">Parar</button>
   <p class="note" id="sync" role="status"></p>
 </div>
 </div>
@@ -500,8 +501,9 @@ body.qe .bl{display:none}
 </div>
 <h2 class="sec">Directo</h2>
 <div class="card">
-  <button class="go" id="aStart">Empezar ahora</button>
-  <button id="aReset">Quitar ajuste</button>
+  <button class="go" id="aStart">Empezar</button>
+  <button id="aStop">Parar</button>
+  <button id="aReset" aria-label="Volver a la hora programada">Programado</button>
   <p id="aSync"></p>
 </div>
 <h2 class="sec">Avisos</h2>
@@ -631,9 +633,10 @@ const shown = (t, m) => {
 };
 
 // Hora d'inici (tot es guarda en aquest mòbil). Mana, per ordre:
-//   1) sincronitzat a mà («Empezar ahora», ±10 s)  →  um.start.<id>
+//   1) sincronitzat a mà («Empezar», ±10 s)  →  um.start.<id>
 //   2) data i hora posades a «Ajustes»              →  um.plan.<id>  (hora local del mòbil)
-//   3) «inici» del set.json                         (sense hora o mal escrita → 0: s'espera a «Empezar ahora»)
+//   3) «inici» del set.json                         (sense hora o mal escrita → 0: s'espera a «Empezar»)
+// «Parar» passa per sobre de tot: um.stop.<id> (quan s'ha parat). No toca els altres ajustos; el treuen Empezar, Programado (Ahora i Ajustes) i guardar hora a Ajustes.
 const SID = SET.id || SET.nom;
 // Setlist editada en aquest mòbil: {txt, at (quan), base (empremta del fitxer d'aleshores)}. null = la del fitxer.
 const norm = s => String(s).replace(/\r\n?/g, '\n');
@@ -650,7 +653,9 @@ const store = mem('um.start.' + SID);
 const plan = mem('um.plan.' + SID);
 const filePlanned = (SET.inici && Date.parse(SET.inici)) || 0;
 const planned = () => plan.get() || filePlanned;
-const startAt = () => store.get() || planned();
+const stopK = mem('um.stop.' + SID);
+const stopped = () => !!stopK.get();
+const startAt = () => stopped() ? 0 : store.get() || planned();
 // Avisos (segons abans del canvi, per tipus): mira «==== Avisos ====» més avall
 
 const $ = id => document.getElementById(id);
@@ -664,7 +669,7 @@ const fechaS = d => dia(d) + ' · ' + hms(d);     // amb segons
 const pad2 = n => String(n).padStart(2, '0');
 const dmy = d => pad2(d.getDate()) + '.' + pad2(d.getMonth() + 1) + '.' + d.getFullYear();   // «01.11.2026», com als cartells
 const fmtOff = ms => (ms < 0 ? '−' : '+') + fmt(Math.abs(ms) / 1000);
-// Desfase del set respecte a la hora prevista, en el mateix sentit que els botons (−10 s = el set va 10 s enrere)
+// Desfase del set respecte a l'hora programada, en el mateix sentit que els botons (−10 s = el set va 10 s enrere)
 const offTxt = () => fmtOff(planned() - store.get());
 const esc = s => s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
 const mark = x => x.dm ? `<b class="mk">${x.dm}</b>` : '';
@@ -721,21 +726,22 @@ function tick() {
   const live = !!t0 && el >= 0;
   document.body.classList.toggle('live', live);
   $('bMinus').disabled = $('bPlus').disabled = !t0;
-  $('bReset').disabled = $('aReset').disabled = !store.get();
+  $('bReset').disabled = $('aReset').disabled = !store.get() && !stopped();
   syncNote();
   ajustes(live);
   if (!live) disarm();
 
-  if (!t0) {   // set sense «inici» i encara sense «Empezar ahora»
+  if (!t0) {   // set sense «inici» i encara sense «Empezar»
     document.documentElement.style.removeProperty('--part');
     setText($('done'), ''); setText($('rest'), fmt(TOTAL));
     paintBar(-1);
-    if (last !== -4) {
-      main.innerHTML = `<section class="state fr">${poster(0)}<div class="k">Sin hora de inicio</div><p>${plural(tracks.length, 'tema', 'temas')} · ${fmt(TOTAL)}</p></section>`;
+    const k = stopped() ? 'Parado' : 'Sin hora de inicio', key = stopped() ? -7 : -4;
+    if (last !== key) {
+      main.innerHTML = `<section class="state fr">${poster(0)}<div class="k">${k}</div><p>${plural(tracks.length, 'tema', 'temas')} · ${fmt(TOTAL)}</p></section>`;
       list(-1, 0);
-      last = -4;
+      last = key;
     }
-    strip('Sin hora de inicio', `${plural(tracks.length, 'tema', 'temas')} · ${fmt(TOTAL)}`, '');
+    strip(k, `${plural(tracks.length, 'tema', 'temas')} · ${fmt(TOTAL)}`, '');
   } else {
     setText($('done'), el > 0 && el < TOTAL ? fmt(el) : '');
     setText($('rest'), el > 0 && el < TOTAL ? '−' + fmt(TOTAL - el) : fmt(TOTAL));
@@ -836,24 +842,24 @@ function strip(k, t, c, soon = false) {
   $('sC').classList.toggle('soon', soon);
 }
 
-// Text de sota els botons: quant s'ha mogut respecte a l'hora prevista (la posada al mòbil, si n'hi ha; si no, la del set)
+// Text de sota els botons: quant s'ha mogut respecte a l'hora programada (la posada al mòbil, si n'hi ha; si no, la del set)
 // Només surt si hi ha un ajust a mà (si no, la fila queda buida i no ocupa lloc)
 function syncNote() {
   const s = store.get(), pl = planned();
-  const t = s && pl ? (Math.abs(s - pl) < 500 ? 'A mano · sin desfase' : `Desfase ${offTxt()} · inicio ${hms(new Date(s))}`)
+  const t = stopped() ? '' : s && pl ? (Math.abs(s - pl) < 500 ? 'A mano · sin desfase' : `Desfase ${offTxt()} · inicio ${hms(new Date(s))}`)
     : s ? 'A mano · inicio ' + hms(new Date(s)) : '';
   setText($('sync'), t);
-  setText($('aSync'), t);
+  setText($('aSync'), stopped() ? 'Parado a las ' + hms(new Date(stopK.get())) : t);
 }
 
 // «Ajustes»: d'on surt l'hora que mana ara
 function ajustes(live) {
   const s = store.get(), pl = planned();
-  setText($('srcT'), startAt() ? fechaS(new Date(startAt())) : 'Sin hora');
-  setText($('srcD'), s ? (pl ? `A mano (${offTxt()})` : 'A mano') : plan.get() ? 'Puesta en este móvil. Solo en este móvil.' : filePlanned ? 'Del archivo' : 'Pon fecha y hora, o Empezar ahora');
+  setText($('srcT'), stopped() ? 'Parado' : startAt() ? fechaS(new Date(startAt())) : 'Sin hora');
+  setText($('srcD'), stopped() ? 'Toca Empezar para seguir' : s ? (pl ? `A mano (${offTxt()})` : 'A mano') : plan.get() ? 'Puesta en este móvil. Solo en este móvil.' : filePlanned ? 'Del archivo' : 'Pon fecha y hora, o Empezar');
   $('bFile').hidden = !plan.get();
   setText($('bFile'), filePlanned ? 'Usar la del archivo' : 'Quitar hora');
-  if (!$('aStart').classList.contains('arm')) setText($('aStart'), live ? 'Reiniciar ahora' : 'Empezar ahora');
+  if (!$('aStart').classList.contains('arm')) setText($('aStart'), live ? 'Reiniciar ahora' : 'Empezar');
 }
 
 // Avís «Deshacer» (6 s). Accions seguides del mateix tipus (p. ex. 3× «10 s», o diversos canvis al setlist) es desfan de cop: es guarda el primer «abans».
@@ -867,20 +873,27 @@ function toast(msg, kind, undo) {
 }
 function closeToast() { clearTimeout(toastT); $('toast').hidden = true; undoFn = null; undoKind = ''; }
 $('bUndo').onclick = () => { const f = undoFn; if (!f) return; closeToast(); f(); };
+// Qualsevol sincronització (Empezar, ±10 s, Programado) també treu «Parado»; «Deshacer» ho torna tot com era.
 function sync(v, msg) {
-  const before = store.get();
-  store.set(v); last = -3; flash = true; tick();
+  const before = store.get(), wasStop = stopK.get();
+  store.set(v); stopK.set(0); last = -3; flash = true; tick();
   const s = store.get();
-  toast(msg + (s && planned() ? ' · desfase ' + offTxt() : ''), 'sync', () => { store.set(before); last = -3; flash = true; tick(); });
+  toast(msg + (s && planned() ? ' · desfase ' + offTxt() : ''), 'sync', () => { store.set(before); stopK.set(wasStop); last = -3; flash = true; tick(); });
+}
+// «Parar»: deixa de seguir el rellotge (passa per sobre de l'ajust a mà i de l'hora programada, que no es toquen)
+function stop() {
+  const before = stopK.get();
+  stopK.set(Date.now()); last = -3; flash = true; tick();
+  toast('Parado', 'stop', () => { stopK.set(before); last = -3; flash = true; tick(); });
 }
 
 $('bStart').onclick = () => sync(Date.now(), 'Empezado');
 $('bMinus').onclick = () => sync(startAt() + 10000, '−10 s');   // el set va 10 s per darrere: el compte enrere puja 10 s
 $('bPlus').onclick  = () => sync(startAt() - 10000, '+10 s');
-$('bReset').onclick = () => sync(0, 'Hora prevista');
-// «Reiniciar» (= Empezar ahora amb el set en marxa): cal tocar-lo dos cops en 3 s. També el botó gran d'«Ajustes» quan el set ja sona.
+$('bReset').onclick = () => sync(0, 'Hora programada');
+// Dos tocs en 3 s: «Parar» (Ahora i Ajustes) i «Reiniciar ahora» (= Empezar amb el set en marxa, només a Ajustes).
 const arms = [];
-function armable(b, idle, armed, need) {
+function armable(b, idle, armed, need, act = () => sync(Date.now(), 'Reiniciado')) {
   let t = 0, at = 0;
   const off = () => { if (!b.classList.contains('arm')) return; clearTimeout(t); b.classList.remove('arm'); b.innerHTML = idle(); };
   arms.push(off);
@@ -888,14 +901,15 @@ function armable(b, idle, armed, need) {
     if (!need()) return sync(Date.now(), 'Empezado');
     if (!b.classList.contains('arm')) { b.classList.add('arm'); b.innerHTML = armed; at = Date.now(); t = setTimeout(off, 3000); return; }
     if (Date.now() - at < 350) return;   // un doble toc sense voler no compta
-    off(); sync(Date.now(), 'Reiniciado');
+    off(); act();
   };
 }
 const isLive = () => document.body.classList.contains('live');
 function disarm() { arms.forEach(f => f()); }
-armable($('bRestart'), () => 'Reiniciar', '¿Seguro?', () => true);
-armable($('aStart'), () => isLive() ? 'Reiniciar ahora' : 'Empezar ahora', '¿Seguro? Toca otra vez', isLive);
-$('aReset').onclick = () => sync(0, 'Hora prevista');
+armable($('aStart'), () => isLive() ? 'Reiniciar ahora' : 'Empezar', '¿Seguro? Toca otra vez', isLive);
+armable($('bStop'), () => 'Parar', '¿Parar?', () => true, stop);
+armable($('aStop'), () => 'Parar', '¿Parar? Toca otra vez', () => true, stop);
+$('aReset').onclick = () => sync(0, 'Hora programada');
 
 // ---- Pestanyes (Ahora · Setlist · Ajustes). Es recorda l'última. ----
 const TABS = ['ahora', 'setlist', 'ajustes'];
@@ -941,7 +955,7 @@ function askOrSave(v, what) {
 }
 function savePlan(v) {
   plan.set(v && v !== filePlanned ? v : 0);   // si és la mateixa que la del fitxer, no cal guardar-la
-  store.set(0); closeToast(); disarm();
+  store.set(0); stopK.set(0); closeToast(); disarm();
   $('cfm').hidden = true; pending = null;
   last = -3; flash = true; tick(); fillDT();
   setText($('aMsg'), planned() ? 'Guardado · ' + fechaS(new Date(planned())) : 'Hora quitada');
@@ -951,7 +965,7 @@ $('bSave').onclick = () => {
   if (!v) { setText($('aMsg'), 'Falta fecha u hora.'); return; }
   askOrSave(v, 'la hora nueva');
 };
-$('bFile').onclick = () => askOrSave(0, filePlanned ? 'la hora del archivo' : 'Empezar ahora');
+$('bFile').onclick = () => askOrSave(0, filePlanned ? 'la hora del archivo' : 'Empezar');
 $('cfmYes').onclick = () => { if (pending !== null) savePlan(pending); };
 $('cfmNo').onclick = () => { $('cfm').hidden = true; pending = null; };
 ['iDate', 'iTime'].forEach(k => $(k).addEventListener('input', () => { $('cfm').hidden = true; setText($('aMsg'), ''); }));
