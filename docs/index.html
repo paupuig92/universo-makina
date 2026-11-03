@@ -515,6 +515,11 @@ body.qe .bl{display:none}
 </div>
 <h2 class="sec">Set</h2>
 <div class="card"><div class="info" id="info"></div></div>
+<h2 class="sec">App</h2>
+<div class="card">
+  <button class="save" id="bUpd">Actualizar app</button>
+  <p id="updS" role="status"></p>
+</div>
 <footer><p class="ver">v<span id="ver">—</span></p></footer>
 </section>
 
@@ -1196,6 +1201,22 @@ avSync();
 const ver = () => window.caches?.keys().then(ks => { const k = ks.find(x => x.startsWith('um-') && x !== 'um-fonts'); if (k) setText($('ver'), k.slice(3)); }).catch(() => {});
 ver(); setTimeout(ver, 4000);   // la primera vegada la memòria encara s'està omplint
 
+// Actualitzar a mà: busca una versió nova al servidor i, si n'hi ha, recarrega (encara que soni un tema)
+let updAsk = false;
+$('bUpd').onclick = async () => {
+  const st = t => setText($('updS'), t);
+  if (!navigator.onLine) return st('Sin conexión. Prueba cuando tengas cobertura.');
+  const reg = await navigator.serviceWorker?.getRegistration().catch(() => null);
+  if (!reg) { location.reload(); return; }
+  st('Buscando…'); $('bUpd').disabled = true;
+  try { await reg.update(); } catch { $('bUpd').disabled = false; return st('No se ha podido comprobar. Prueba otra vez.'); }
+  const nw = reg.installing || reg.waiting;
+  if (!nw) { $('bUpd').disabled = false; return st('Ya tienes la última versión.'); }
+  updAsk = true; st('Actualizando…');
+  if (nw.state === 'activated') location.reload();
+  nw.addEventListener('statechange', () => { if (nw.state === 'activated') location.reload(); });
+};
+
 // ==== Editor del setlist ====
 // Una sola font de veritat: el TEXT (mateix format que el fitxer). L'editor de text i l'edició ràpida el reescriuen i es torna a carregar amb parseSet.
 // Es guarda només en aquest mòbil (um.txt.<id>); l'original del fitxer (SET.txt) sempre es pot recuperar.
@@ -1603,7 +1624,7 @@ keepAwake();
 // Sense cobertura: el service worker guarda l'app al mòbil. Si arriba una versió nova i no hi ha cap tema sonant, es recarrega sola.
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   let had = !!navigator.serviceWorker.controller;
-  navigator.serviceWorker.addEventListener('controllerchange', () => { if (!had) { had = true; return; } if (last < 0 && !document.body.classList.contains('modal')) location.reload(); });
+  navigator.serviceWorker.addEventListener('controllerchange', () => { if (!had) { had = true; return; } if (updAsk) return location.reload(); if (last < 0 && !document.body.classList.contains('modal')) location.reload(); });
   navigator.serviceWorker.register('sw.js').catch(() => {});
 }
 </script>
