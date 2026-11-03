@@ -575,7 +575,7 @@ body.qe .bl{display:none}
 </section>
 
 <div class="dock">
-  <div class="toast" id="toast" hidden><span id="tMsg"></span><button id="bUndo">Deshacer</button></div>
+  <div class="toast" id="toast" hidden><span id="tMsg" role="status"></span><button id="bUndo">Deshacer</button></div>
 </div>
 <nav class="tabbar" id="tabbar" aria-label="Secciones">
   <button type="button" data-tab="ahora"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 7.5V12l3 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span>Ahora</span></button>
@@ -866,15 +866,21 @@ function ajustes(live) {
 }
 
 // Avís «Deshacer» (6 s). Accions seguides del mateix tipus (p. ex. 3× «10 s», o diversos canvis al setlist) es desfan de cop: es guarda el primer «abans».
+// També serveix per a «Versión nueva» (botó «Actualizar», es queda fins que es toca o en surt un altre).
 let undoFn = null, undoKind = '', toastT = 0;
-function toast(msg, kind, undo) {
+function toast(msg, kind, undo, label = 'Deshacer', keep = false) {
   if (!undoFn || undoKind !== kind) { undoFn = undo; undoKind = kind; }
   setText($('tMsg'), msg);
+  setText($('bUndo'), label);
   $('bUndo').hidden = !undoFn;
   $('toast').hidden = false;
-  clearTimeout(toastT); toastT = setTimeout(closeToast, 6000);
+  clearTimeout(toastT); if (!keep) toastT = setTimeout(closeToast, 6000);
 }
-function closeToast() { clearTimeout(toastT); $('toast').hidden = true; undoFn = null; undoKind = ''; }
+function closeToast() {
+  const was = undoKind;
+  clearTimeout(toastT); $('toast').hidden = true; undoFn = null; undoKind = '';
+  if (updReady && was !== 'upd') setTimeout(offerUpd, 0);   // la versió nova torna a sortir quan marxa l'altre avís
+}
 $('bUndo').onclick = () => { const f = undoFn; if (!f) return; closeToast(); f(); };
 // Qualsevol sincronització (Empezar, ±10 s, Programado) també treu «Parado»; «Deshacer» ho torna tot com era.
 function sync(v, msg) {
@@ -1223,21 +1229,37 @@ avSync();
 const ver = () => window.caches?.keys().then(ks => { const k = ks.find(x => x.startsWith('um-')); if (k) setText($('ver'), k.slice(3)); }).catch(() => {});
 ver(); setTimeout(ver, 4000);   // la primera vegada la memòria encara s'està omplint
 
-// Actualitzar a mà: busca una versió nova al servidor i, si n'hi ha, recarrega (encara que soni un tema)
-let updAsk = false;
+// Actualitzar a mà: busca una versió nova al servidor i, si n'hi ha, recarrega (encara que soni un tema).
+// Amb poca cobertura no s'ha de quedar penjat: com a molt 8 s per buscar (navigator.onLine a l'iPhone sovint diu «sí» sense xarxa).
+let updAsk = false, updReady = false;
+const within = (p, ms) => Promise.race([p, new Promise((_, no) => setTimeout(() => no(new Error('temps')), ms))]);
 $('bUpd').onclick = async () => {
-  const st = t => setText($('updS'), t);
-  if (!navigator.onLine) return st('Sin conexión. Prueba cuando tengas cobertura.');
+  const st = t => setText($('updS'), t), b = $('bUpd');
+  const fail = () => { b.disabled = false; st('Sin conexión. Prueba cuando tengas cobertura.'); };
+  if (navigator.onLine === false) return fail();
   const reg = await navigator.serviceWorker?.getRegistration().catch(() => null);
   if (!reg) { location.reload(); return; }
-  st('Buscando…'); $('bUpd').disabled = true;
-  try { await reg.update(); } catch { $('bUpd').disabled = false; return st('No se ha podido comprobar. Prueba otra vez.'); }
+  st('Buscando…'); b.disabled = true;
+  try { await within(reg.update(), 8000); } catch { return fail(); }
   const nw = reg.installing || reg.waiting;
-  if (!nw) { $('bUpd').disabled = false; return st('Ya tienes la última versión.'); }
+  if (!nw) { b.disabled = false; return st('Ya tienes la última versión.'); }
   updAsk = true; st('Actualizando…');
-  if (nw.state === 'activated') location.reload();
-  nw.addEventListener('statechange', () => { if (nw.state === 'activated') location.reload(); });
+  if (nw.state === 'installed') nw.postMessage('skip');
+  if (nw.state === 'activated') return location.reload();
+  nw.addEventListener('statechange', () => { if (nw.state === 'installed') nw.postMessage('skip'); if (nw.state === 'activated') location.reload(); });
+  setTimeout(() => { if (!updAsk) return; updAsk = false; b.disabled = false; st('No se ha podido actualizar. Prueba otra vez.'); }, 30000);
 };
+// Versió nova amb l'app oberta i un tema sonant (o l'editor obert): no es recarrega sola, surt l'avís amb «Actualizar»
+function offerUpd() {
+  updReady = true;
+  if (document.body.classList.contains('modal') || undoKind === 'upd') return;
+  if (!$('toast').hidden && undoKind) return;   // primer marxa el «Deshacer» que hi ha
+  toast('Versión nueva', 'upd', async () => {
+    updAsk = true;
+    const reg = await navigator.serviceWorker?.getRegistration().catch(() => null);
+    if (reg?.waiting) reg.waiting.postMessage('skip'); else location.reload();
+  }, 'Actualizar', true);
+}
 
 // ==== Editor del setlist ====
 // Una sola font de veritat: el TEXT (mateix format que el fitxer). L'editor de text i l'edició ràpida el reescriuen i es torna a carregar amb parseSet.
@@ -1401,7 +1423,7 @@ let back = null;
 function modal(on) {
   document.body.classList.toggle('modal', on);
   [document.querySelector('header'), ...document.querySelectorAll('.tab'), $('tabbar')].forEach(e => e.inert = on);
-  if (on) { back = document.activeElement; closeToast(); } else if (back?.isConnected) back.focus({ preventScroll: true });
+  if (on) { back = document.activeElement; closeToast(); } else { if (back?.isConnected) back.focus({ preventScroll: true }); if (updReady) offerUpd(); }
 }
 
 // ---- Editor de text ----
@@ -1662,11 +1684,26 @@ keepAwake();
 document.addEventListener('gesturestart', e => e.preventDefault());
 
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
-  let had = !!navigator.serviceWorker.controller;
-  navigator.serviceWorker.addEventListener('controllerchange', () => { if (!had) { had = true; return; } if (updAsk) return location.reload(); if (last < 0 && !document.body.classList.contains('modal')) location.reload(); });
-  navigator.serviceWorker.register('sw.js').catch(() => {});
-  // L'iPhone no tanca l'app de la pantalla d'inici: en tornar-hi, mira si hi ha versió nova
-  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') navigator.serviceWorker.getRegistration().then(r => r && r.update()).catch(() => {}); });
+  const SW = navigator.serviceWorker;
+  let had = !!SW.controller;
+  // Versió nova activa: sense cap tema sonant ni l'editor obert es recarrega sola; si no, avís «Versión nueva»
+  SW.addEventListener('controllerchange', () => {
+    if (!had) { had = true; return; }
+    if (updAsk) return location.reload();
+    if (last < 0 && !document.body.classList.contains('modal')) return location.reload();
+    offerUpd();
+  });
+  SW.register('sw.js').catch(() => {});
+  // Busca versió nova cada 2 min amb l'app a la vista (amb la pantalla encesa l'app no s'amaga mai) i en tornar-hi (com a molt cada 30 s)
+  let checked = 0;
+  const checkUpd = () => {
+    if (document.hidden || Date.now() - checked < 30000) return;
+    checked = Date.now();
+    SW.getRegistration().then(async r => { if (!r) return; await within(r.update(), 8000).catch(() => {}); if (r.waiting && SW.controller) offerUpd(); }).catch(() => {});
+  };
+  window.checkUpd = checkUpd;
+  setInterval(checkUpd, 120000);
+  document.addEventListener('visibilitychange', checkUpd);
 }
 </script>
 </body>
