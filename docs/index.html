@@ -2,6 +2,8 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -18,272 +20,436 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap">
 <style>
-/* ==== Marca Universo Makina ====
-   negre càlid · os (crema del logo) · taronja UM · línies concèntriques · triangles ▲ */
+/* ==== Universo Makina · regles de disseny (resum a CLAUDE.md → «Disseny») ====
+   Com els cartells: negre càlid, crema, UN sol taronja (#ff4514) per al grafisme i l'acció principal.
+   Cantonades rectes. Helvetica bold; rètols en majúscules amb poc espai entre lletres (màx. .03em).
+   Informació en blocs separats per línies (sense targetes, sense brillantors, sense gra, sense animacions infinites).
+   ▲ només a les 4 cantonades del marc principal (tema actual i pantalles d'abans/després).
+   Color de part NOMÉS on és dada: barra de parts, etiqueta de part, hora/línia de la llista i avís de canvi de part. */
 :root{
-  --ink:#0b0807; --panel:#16120f; --panel2:#201a16;
-  --bone:#d6d0ba; --fg:#f3eedf; --dim:#9d9686; --mute:#878072;
-  --line:rgba(214,208,186,.14);
-  --orange:#ff4514;
+  --ink:#0b0807; --s1:#16120f; --s2:#201a16;
+  --fg:#f3eedf; --bone:#d6d0ba; --dim:#9d9686; --mute:#878072; --past:#6f695e;
+  --line:rgba(214,208,186,.14); --line2:rgba(214,208,186,.32);
+  --orange:#ff4514; --warn:#ffd43b;
   --part:var(--orange);
+  --tabh:65px;   /* barra de pestanyes sense la zona segura: 6 + 52 + 6 + 1 */
   --font:"Helvetica Neue",Helvetica,"Archivo",Arial,system-ui,sans-serif;
+  --tri:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 7'%3E%3Cpath d='M4 0l4 7H0z' fill='%23ff4514'/%3E%3C/svg%3E");
 }
 *{box-sizing:border-box;margin:0}
 html{background:var(--ink);-webkit-text-size-adjust:100%;overscroll-behavior-y:none}
 body{
-  color:var(--fg);font:500 16px/1.3 var(--font);-webkit-font-smoothing:antialiased;
+  color:var(--fg);font:500 16px/1.3 var(--font);-webkit-font-smoothing:antialiased;background:var(--ink);
   max-width:640px;margin:0 auto;min-height:100vh;
   /* a baix hi ha lloc per a la barra de pestanyes (fixa) */
-  padding:calc(env(safe-area-inset-top) + 14px) calc(env(safe-area-inset-right) + 16px) calc(env(safe-area-inset-bottom) + 88px) calc(env(safe-area-inset-left) + 16px);
-  background:
-    radial-gradient(130% 55% at 50% -12%, color-mix(in srgb, var(--part) 16%, transparent), transparent 62%),
-    var(--ink);
-  background-attachment:fixed;
+  padding:calc(env(safe-area-inset-top) + 14px) calc(env(safe-area-inset-right) + 16px) calc(env(safe-area-inset-bottom) + var(--tabh) + 23px) calc(env(safe-area-inset-left) + 16px);
 }
-/* gra de cartell, molt subtil */
-body:before{content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;opacity:.07;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+/* App a la pantalla d'inici (barra d'estat transparent): res no passa per sota del rellotge i la bateria */
+body:after{content:"";position:fixed;left:0;right:0;top:0;height:env(safe-area-inset-top);background:var(--ink);z-index:13;pointer-events:none}
 .defs{position:absolute;width:0;height:0;overflow:hidden}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 [hidden]{display:none!important}
-.num,.clock,.meta,.left,.big,li .t,li .n,.pos,.tfoot,.next .t,.pdiv,.pc,.chg,.endnote,.note,.part-h .pm{font-variant-numeric:tabular-nums lining-nums}
+.num,.clock,.meta,.left,.big,li .t,li .n,.pos,.tfoot,.next .t,.pdiv,.endnote,.note,.part-h .pm,.src,.info,.strip .sc,.al{font-variant-numeric:tabular-nums lining-nums}
 :focus-visible{outline:3px solid var(--fg);outline-offset:2px}
+/* Rètol: l'única etiqueta petita de l'app */
+.sec,.k,.lbl,.dt label,.fl,.ed-d h3,.av h3,.sl-h .slinfo,.strip .sk,.ptag,.pdiv,.part-h .pn,.endnote b,.tabbar button,.ed-h h2,.sheet h2,.snom{
+  font-weight:800;letter-spacing:.02em;text-transform:uppercase;line-height:1.2}
 
 /* ---- Capçalera ---- */
 header{display:flex;justify-content:space-between;align-items:center;gap:12px}
 .logo{display:block;width:124px;height:35px}
-.clock{font-size:20px;font-weight:800;font-stretch:110%;color:var(--bone);letter-spacing:.01em}
-.setinfo{margin-top:12px;min-width:0}
-h1{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--bone);line-height:1.2}
-h1:before{content:"";flex:none;width:9px;height:8px;background:var(--orange);clip-path:polygon(50% 0,100% 100%,0 100%)}
-.sub{font-size:12px;font-weight:600;color:var(--dim);margin:3px 0 0 17px}
+.clock{font-size:19px;font-weight:700;color:var(--bone)}
+.setinfo{margin-top:14px;min-width:0}
+h1{font-size:15px;font-weight:800;letter-spacing:.01em;text-transform:uppercase;color:var(--fg);line-height:1.2}
+.sub{font-size:13px;font-weight:600;color:var(--dim);margin-top:2px}
 .sub:empty{display:none}
 /* En directe la capçalera s'encongeix: el que importa és el tema */
 body.live{padding-top:calc(env(safe-area-inset-top) + 8px)}
 body.live .setinfo{display:none}
 body.live .logo{width:96px;height:27px}
-body.live .clock{font-size:18px}
+body.live .clock{font-size:17px}
 body.live .barw{margin-top:9px}
 body.live .now{margin-top:10px}
+/* Abans / després del set, la pantalla és el cartell (porta el logo i les dades): fora el logo petit i el nom */
+body[data-tab=ahora]:has(#main>.state) .logo{visibility:hidden}
+body[data-tab=ahora]:has(#main>.state) .setinfo{display:none}
 
 /* ---- Barra de parts (ple fins on som + capçal) ---- */
-.barw{position:relative;margin:12px 0 6px}
-.bar{height:12px;display:flex;gap:3px}
-.bar i{display:block;height:100%;border-radius:2px;min-width:3px;--f:0%;
-  background:linear-gradient(90deg,var(--c) var(--f),color-mix(in srgb,var(--c) 34%,var(--ink)) var(--f))}
-.ph{position:absolute;top:-4px;bottom:-4px;left:0;width:3px;margin-left:-1.5px;background:var(--fg);border-radius:2px;box-shadow:0 0 0 1.5px var(--ink);pointer-events:none}
-.meta{display:flex;justify-content:space-between;font-size:12px;font-weight:700;color:var(--dim);letter-spacing:.02em}
+.barw{position:relative;margin:14px 0 6px}
+.bar{height:12px;display:flex;gap:2px}
+.bar i{display:block;height:100%;min-width:3px;--f:0%;
+  background:linear-gradient(90deg,var(--c) var(--f),color-mix(in srgb,var(--c) 30%,var(--ink)) var(--f))}
+.ph{position:absolute;top:-4px;bottom:-4px;left:0;width:3px;margin-left:-1.5px;background:var(--fg);box-shadow:0 0 0 1.5px var(--ink);pointer-events:none}
+.meta{display:flex;justify-content:space-between;font-size:13px;font-weight:700;color:var(--dim)}
+
+/* ---- Marc principal (tema actual, pantalles d'abans/després): ▲ a les 4 cantonades, com els cartells ---- */
+.now,.state{position:relative;margin-top:16px;background:var(--s1);border:1px solid var(--line);overflow:hidden}
+.fr:before{content:"";position:absolute;inset:6px;pointer-events:none;
+  background:var(--tri) 0 0/8px 7px no-repeat,var(--tri) 100% 0/8px 7px no-repeat,var(--tri) 0 100%/8px 7px no-repeat,var(--tri) 100% 100%/8px 7px no-repeat}
 
 /* ---- Tema actual ---- */
-.now{position:relative;margin-top:16px;padding:16px 16px 14px;background:var(--panel);border:1px solid var(--line);border-radius:6px;overflow:hidden;isolation:isolate}
-.now:before,.now:after{content:"";position:absolute;top:8px;width:8px;height:7px;background:var(--part);clip-path:polygon(50% 0,100% 100%,0 100%)}
-.now:before{left:8px}.now:after{right:8px}
-.now-tri{position:absolute;right:-46px;bottom:-40px;width:210px;height:183px;fill:var(--part);opacity:.13;z-index:-1}
-.now-h{display:flex;justify-content:space-between;align-items:stretch;gap:10px;margin:6px 0 0}
-.ptag{background:var(--part);color:#0b0807;font-size:13px;font-weight:900;font-stretch:112%;letter-spacing:.06em;text-transform:uppercase;padding:5px 9px 4px;border-radius:3px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.now{--pb:14px;padding:16px 16px var(--pb)}
+.now-h{display:flex;justify-content:space-between;align-items:stretch;gap:10px;margin-top:6px}
+.ptag{background:var(--part);color:var(--ink);font-size:13px;padding:5px 9px 4px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pos{font-size:15px;font-weight:800;color:var(--fg);align-self:center;white-space:nowrap}
 .pos i{font-style:normal;color:var(--dim);font-weight:600}
-/* títol: com a molt 3 línies; com més llarg, més petit */
-.title{font-size:34px;line-height:1.04;font-weight:800;font-stretch:100%;letter-spacing:-.012em;margin:14px 0 2px;overflow-wrap:anywhere;color:var(--fg);
+/* títol: com a molt 3 línies; com més llarg, més petit. Sense adorns. */
+.title{font-size:34px;line-height:1.04;font-weight:800;letter-spacing:-.01em;margin:14px 0 2px;overflow-wrap:anywhere;color:var(--fg);
   display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}
 .title.long{font-size:28px}
 .title.xlong{font-size:24px}
 .title.xxlong{font-size:21px;line-height:1.08}
 .nw{white-space:nowrap}
-.mk{display:inline-block;font-size:.5em;font-weight:900;font-stretch:110%;line-height:1;padding:.22em .4em .18em;margin-right:.3em;border:2px solid var(--part);color:var(--part);border-radius:3px;vertical-align:.32em;letter-spacing:.02em}
+.mk{display:inline-block;font-size:.5em;font-weight:800;line-height:1;padding:.22em .4em .18em;margin-right:.3em;border:2px solid currentColor;color:var(--bone);vertical-align:.32em}
 .cd{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:12px}
-.left{font-size:min(20vw,82px);line-height:.9;font-weight:800;font-stretch:112%;letter-spacing:-.03em;color:var(--fg)}
-.left.soon{color:var(--part)}
-.lbl{font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);text-align:right;line-height:1.25;white-space:nowrap}
-/* Avís abans del canvi (AVISO segons): anell interior del color de la part (es veu en totes) + fons tenyit + batec */
-.now.soon{border-color:var(--part);background:color-mix(in srgb,var(--part) 13%,var(--panel));box-shadow:inset 0 0 0 3px var(--part);animation:um-pulse 1s ease-in-out infinite}
-@keyframes um-pulse{50%{box-shadow:inset 0 0 0 3px var(--part),0 0 0 3px var(--part),0 0 30px color-mix(in srgb,var(--part) 55%,transparent)}}
+.left{font-size:min(20vw,82px);line-height:.9;font-weight:800;letter-spacing:-.03em;color:var(--fg)}
+.lbl{font-size:12px;color:var(--dim);text-align:right;white-space:nowrap}
+/* Avís (Ajustes → Avisos): marc gruixut i número del color de l'avís. Un sol cop de marc en entrar, cap batec infinit. */
+.now.soon{--rc:var(--orange);border-color:var(--rc);box-shadow:inset 0 0 0 3px var(--rc);animation:um-hit .5s ease-out 2}
+@keyframes um-hit{0%{box-shadow:inset 0 0 0 12px var(--rc)}}
+.now.soon.p-star{--rc:var(--fg)}
+.now.soon.p-parte{--rc:var(--nc,var(--part))}
+.left.soon{color:var(--rc,var(--orange))}
+/* Pausa entre dos temes (fi d'un < inici del següent) */
+.now.gap .ptag{background:none;color:var(--fg);box-shadow:inset 0 0 0 2px var(--part)}
+.gapn{margin-top:4px;font-size:15px;font-weight:700;color:var(--bone);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* Franja d'avís: a sobre de la barra de progrés del tema (no tapa el compte enrere ni els botons, i no mou res) */
+.prog{position:relative;margin-top:14px}
+.tbar{position:relative;height:12px;overflow:hidden;background:repeating-linear-gradient(90deg,rgba(214,208,186,.16) 0 2px,transparent 2px 6px)}
+.tbar i{display:block;height:100%;background:var(--orange)}
+.tfoot{display:flex;justify-content:space-between;margin-top:6px;font-size:12px;font-weight:700;color:var(--dim)}
+.al{position:absolute;left:0;right:0;top:-3px;bottom:-1px;display:flex;align-items:center;gap:10px;padding:0 10px;background:var(--fg);color:var(--ink);font-size:15px;font-weight:800;line-height:1.1;white-space:nowrap;overflow:hidden}
+.al .alt{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.al b{font-weight:800;letter-spacing:.02em;text-transform:uppercase}
+.al .ald{flex:none;font-weight:800}
+/* Canvi de part i fi del set: franja a tota l'amplada, com el «SOLD OUT» dels cartells */
+.al-parte,.al-fin{left:-16px;right:-16px;top:-6px;bottom:calc(-1 * var(--pb,14px));padding:0 16px;font-size:18px;background:var(--c)}
+.al-fin{background:var(--orange)}
+/* temes (amb campana o amb marca): rètol petit a dalt + títol a sota, perquè el títol hi càpiga */
+.al-star .alt,.al-marca .alt{display:grid;gap:1px}
+.al-star b,.al-marca b{font-size:11px;line-height:1.1}
+.alx{overflow:hidden;text-overflow:ellipsis}
+.al-star b{color:#b02a04}
+.al-star b svg{width:1em;height:1em;vertical-align:-.12em;margin-right:.25em;--bf:currentColor}
+.al-marca{background:var(--s2);color:var(--fg);box-shadow:inset 0 0 0 2px var(--bone)}
+.al-marca b{color:var(--bone)}
 /* Flaix curt després de tocar un botó de sincronització */
 .now.flash,.state.flash{animation:um-flash .7s ease-out}
-@keyframes um-flash{0%{background:color-mix(in srgb,var(--fg) 34%,var(--panel))}}
-/* Canvi de part a prop */
-.chg{margin-top:12px;padding:8px 10px 7px;border-radius:4px;background:var(--c);color:#0b0807;font-size:15px;font-weight:900;font-stretch:108%;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tbar{position:relative;height:12px;margin-top:14px;border-radius:2px;overflow:hidden;
-  background:repeating-linear-gradient(90deg,rgba(214,208,186,.16) 0 2px,transparent 2px 6px)}
-.tbar i{display:block;height:100%;background:var(--part);box-shadow:0 0 18px color-mix(in srgb,var(--part) 60%,transparent)}
-.tfoot{display:flex;justify-content:space-between;margin-top:6px;font-size:12px;font-weight:700;color:var(--dim)}
+@keyframes um-flash{0%{background:color-mix(in srgb,var(--fg) 30%,var(--s1))}}
 
-/* ---- Estats (abans / després) ---- */
-.state{position:relative;margin-top:16px;padding:22px 18px 20px;background:var(--panel);border:1px solid var(--line);border-radius:6px;text-align:center;overflow:hidden}
-.state:before,.state:after{content:"";position:absolute;top:10px;width:8px;height:7px;background:var(--orange);clip-path:polygon(50% 0,100% 100%,0 100%)}
-.state:before{left:10px}.state:after{right:10px}
-.hero{display:block;width:min(74%,280px);aspect-ratio:1091/612;margin:4px auto 14px}
-.k{font-size:12px;font-weight:900;font-stretch:115%;letter-spacing:.18em;text-transform:uppercase;color:var(--orange)}
-.big{font-size:min(19vw,76px);line-height:1;font-weight:800;font-stretch:112%;letter-spacing:-.03em;margin-top:6px;color:var(--fg)}
+/* ---- Pantalles d'abans / després: el cartell ---- */
+.state{padding:22px 18px 22px;text-align:center}
+.ph2{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;text-align:left;margin:4px 4px 16px}
+.ph2 span{display:grid;gap:2px;min-width:0}
+.ph2 span:not(.r){flex:none}
+.ph2 span:not(.r) small{white-space:nowrap}
+.ph2 .r{text-align:right;margin-left:auto}
+.ph2 small{font-size:11px;font-weight:800;letter-spacing:.02em;text-transform:uppercase;color:var(--orange);line-height:1.2}
+.ph2 b{font-size:20px;font-weight:800;text-transform:uppercase;color:var(--bone);line-height:1.05;overflow-wrap:anywhere}
+.hero{display:block;width:min(80%,300px);aspect-ratio:1091/612;margin:0 auto}
+.snom{font-size:12px;color:var(--bone);margin-top:6px}
+.k{font-size:12px;color:var(--dim);margin-top:20px}
+.big{font-size:min(19vw,76px);line-height:1;font-weight:800;letter-spacing:-.03em;margin-top:4px;color:var(--fg)}
 .big.l{font-size:min(14vw,58px)}
-.big.txt{font-size:min(11vw,44px);font-stretch:100%;letter-spacing:-.01em}
 .state p{font-size:14px;font-weight:600;color:var(--dim);margin-top:10px}
-.state p::first-letter{text-transform:uppercase}
+.band{margin:20px -18px 0;padding:14px 18px 12px;background:var(--orange);color:var(--ink)}
+.band b{display:block;font-size:min(12vw,46px);font-weight:800;line-height:.95;letter-spacing:-.01em;text-transform:uppercase}
+.band span{display:block;margin-top:6px;font-size:13px;font-weight:800;letter-spacing:.02em;text-transform:uppercase}
 
-/* ---- Títols de secció ---- */
-.sec{display:flex;align-items:center;gap:10px;font-size:12px;font-weight:900;font-stretch:115%;letter-spacing:.16em;text-transform:uppercase;color:var(--bone);margin:22px 0 8px}
-.sec:after{content:"";flex:1;height:5px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
-.lhint{font-size:12px;font-weight:600;color:var(--dim);margin:0 0 4px}
+/* ---- Secció: una línia i un rètol ---- */
+.sec{display:block;margin:22px 0 8px;padding-top:10px;border-top:1px solid var(--line);font-size:12px;color:var(--dim)}
 
-/* ---- Llistes ---- */
+/* ---- Llistes (com la llista de dates dels cartells: hora en color, títol en crema) ---- */
 ol{list-style:none;padding:0}
-li{display:grid;grid-template-columns:22px 50px 1fr;gap:8px;align-items:baseline;padding:10px 8px 10px 10px;border-bottom:1px solid var(--line);font-size:15px;font-weight:600;line-height:1.25;border-left:3px solid var(--c,transparent);overflow-wrap:anywhere}
+li{display:grid;grid-template-columns:22px 50px 1fr;gap:8px;align-items:baseline;padding:10px 8px 10px 10px;border-bottom:1px solid var(--line);border-left:3px solid transparent;font-size:15px;font-weight:600;line-height:1.25;overflow-wrap:anywhere}
 li .n{font-size:12px;color:var(--mute);font-weight:700;text-align:right}
-li .t{font-size:13px;color:var(--dim);font-weight:700}
-li .mk{font-size:12px;border-width:1.5px;color:var(--c);border-color:var(--c);vertical-align:.1em;padding:2px 4px 1px}
+li .t{font-size:14px;color:var(--c,var(--dim));font-weight:800}
+li .mk{font-size:11px;border-width:1.5px;vertical-align:.1em;padding:2px 4px 1px}
 /* ja sonats: més apagats per color (no per transparència, que es menja el contrast) */
 li.past{color:var(--mute)}
-li.past .t,li.past .n{color:#6f695e}
-li.past .mk{color:var(--mute);border-color:#4a453d}
-li.cur{background:color-mix(in srgb,var(--c) 16%,var(--panel));font-weight:800;color:#fff;border-left-width:6px;padding-left:7px}
+li.past .t,li.past .n{color:var(--past)}
+li.past .mk{color:var(--mute)}
+li.cur{background:color-mix(in srgb,var(--c) 14%,var(--s1));font-weight:800;color:#fff;border-left:6px solid var(--c);padding-left:7px}
 li.cur .t,li.cur .n{color:var(--fg)}
-/* A continuació: més gran, el primer encara més; l'hora és «en m:ss» des d'ara */
-.next li{grid-template-columns:66px 1fr;font-size:17px;font-weight:700;padding:12px 8px 12px 12px;background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--c);border-radius:4px;margin-bottom:6px}
-.next li.n1{font-size:20px;font-weight:800;padding:14px 10px 14px 12px}
-.next .t{font-size:15px;color:var(--bone);white-space:nowrap}
-.next li.pdiv{display:flex;justify-content:space-between;gap:10px;padding:8px 12px 7px;background:color-mix(in srgb,var(--c) 20%,var(--panel));border-color:var(--c);color:var(--fg);font-size:13px;font-weight:900;font-stretch:112%;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap}
-.next li.pdiv b{color:var(--c)}
-.endnote{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin-top:12px;padding:14px;border:1px dashed color-mix(in srgb,var(--part) 55%,transparent);border-radius:4px;font-size:15px;font-weight:700;color:var(--bone)}
-.endnote b{font-size:12px;font-weight:900;font-stretch:115%;letter-spacing:.16em;text-transform:uppercase;color:var(--part)}
+/* Siguientes: el mateix llenguatge, una mica més gran; l'hora és «quant falta» */
+.next li{grid-template-columns:60px 1fr;font-size:17px;font-weight:700;padding:11px 2px 11px 0;border-left:0}
+.next .t{font-size:16px;white-space:nowrap}
+.next li:not(.pdiv)>span:last-child{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+.next li.pdiv{display:flex;justify-content:space-between;gap:10px;padding:7px 10px 6px;background:var(--c);color:var(--ink);border:0;font-size:13px;white-space:nowrap}
+.endnote{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin-top:22px;padding:12px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);font-size:15px;font-weight:700;color:var(--bone)}
+.endnote b{font-size:12px;color:var(--orange)}
 
-/* Capçalera de part (com el bloc d'info dels cartells) */
-.part-h{display:flex;align-items:stretch;margin:22px 0 2px;border:1px solid var(--line);border-radius:4px;overflow:hidden;background:var(--panel)}
-.part-h .pn{background:var(--c);color:#0b0807;font-size:13px;font-weight:900;font-stretch:112%;letter-spacing:.08em;text-transform:uppercase;padding:8px 10px 7px;white-space:nowrap}
-.part-h .pm{flex:1;display:flex;justify-content:space-between;gap:8px;align-items:center;padding:0 10px;font-size:12px;font-weight:700;color:var(--dim);white-space:nowrap;min-width:0}
+/* Capçalera de part (bloc d'info del cartell: pestanya de color + línia) */
+.part-h{display:flex;align-items:stretch;margin:24px 0 0;border-top:3px solid var(--c);border-bottom:1px solid var(--line)}
+.part-h .pn{background:var(--c);color:var(--ink);font-size:13px;padding:6px 10px 6px;white-space:nowrap}
+.part-h .pm{flex:1;display:flex;justify-content:space-between;gap:8px;align-items:center;padding:0 2px 0 10px;font-size:13px;font-weight:700;color:var(--dim);white-space:nowrap;min-width:0}
+.part-h .pm b{color:var(--fg);font-weight:800}
 
-/* ---- Sincronització ---- */
-.tools{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:18px}
+/* ---- Sincronització: la fila sempre queda just a sobre de la barra de pestanyes ---- */
+.tools{position:sticky;z-index:5;bottom:calc(env(safe-area-inset-bottom) + var(--tabh));display:grid;grid-template-columns:repeat(3,1fr);gap:8px;
+  margin:6px -16px 0;padding:12px 16px 8px;background:var(--ink);box-shadow:0 -1px 0 var(--line)}
 body.live .tools{grid-template-columns:repeat(4,1fr)}
 body.live #bStart{display:none}
 #bRestart{display:none}
 body.live #bRestart{display:flex}
-button{font:inherit;font-size:16px;font-weight:800;font-stretch:105%;color:var(--bone);background:var(--panel2);border:1px solid var(--line);border-radius:6px;min-height:52px;padding:8px 10px;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;font-variant-numeric:tabular-nums;white-space:nowrap}
-button:active{transform:scale(.97);background:#2a231e}
-button:disabled{color:var(--mute);background:var(--panel);border-style:dashed;cursor:default}
-button:disabled small{color:var(--mute)}
-.tools button:not(.go){display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:6px 4px;font-size:16px;font-stretch:96%;line-height:1.05;min-width:0}
-.tools small{font-size:12px;font-weight:700;font-stretch:90%;color:var(--dim);letter-spacing:.01em}
-#bRestart.arm{background:var(--orange);border-color:var(--orange);color:#0b0807;font-stretch:84%}
-#bRestart.arm small{color:#0b0807}
-button.go{grid-column:1/-1;min-height:60px;background:var(--orange);border-color:var(--orange);color:#0b0807;font-size:18px;font-weight:900;font-stretch:115%;letter-spacing:.06em;text-transform:uppercase}
+button{font:inherit;font-size:16px;font-weight:700;color:var(--bone);background:var(--s2);border:1px solid var(--line);border-radius:0;min-height:52px;padding:8px 10px;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;font-variant-numeric:tabular-nums;white-space:nowrap}
+button:active{background:#2a231e}
+button:disabled{opacity:.4;cursor:default}
+.tools button:not(.go){display:flex;align-items:center;justify-content:center;padding:6px 2px;font-size:16px;font-weight:800;min-width:0}
+#bRestart.arm{background:var(--orange);border-color:var(--orange);color:var(--ink)}
+button.go{grid-column:1/-1;min-height:60px;background:var(--orange);border-color:var(--orange);color:var(--ink);font-size:18px;font-weight:800;letter-spacing:.02em;text-transform:uppercase}
 button.go:active{background:#e23a0d}
-.note{grid-column:1/-1;font-size:12px;font-weight:600;color:var(--dim);min-height:1em}
+.note{grid-column:1/-1;font-size:13px;font-weight:700;color:var(--dim)}
+.note:empty{display:none}
 /* pantalla estreta o zoom gran (150 %): botons 2×2, metadades de part en dues línies */
 @media (max-width:359px){
   body.live .tools{grid-template-columns:1fr 1fr}
-  button.go{font-size:16px;letter-spacing:.03em}
+  button.go{font-size:16px}
   .part-h .pm{flex-direction:column;align-items:flex-start;justify-content:center;gap:0;padding:4px 10px}
-  .chg{white-space:normal}
+  .al{font-size:14px;padding:0 8px}
 }
-footer{display:flex;justify-content:center;gap:10px;align-items:center;margin-top:30px;font-size:12px;font-weight:900;font-stretch:115%;letter-spacing:.2em;text-transform:uppercase;color:var(--mute)}
-footer:before,footer:after{content:"";width:8px;height:7px;background:var(--orange);clip-path:polygon(50% 0,100% 100%,0 100%)}
+footer{margin-top:28px}
 
 /* ---- A dalt, fix: l'avís «Deshacer» (a dalt perquè no tapi els botons ±10 s, que es toquen seguits) ---- */
-.dock{position:fixed;left:0;right:0;top:0;z-index:12;max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:8px;pointer-events:none;
+.dock{position:fixed;left:0;right:0;top:0;z-index:30;max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:8px;pointer-events:none;
   padding:calc(env(safe-area-inset-top) + 8px) calc(env(safe-area-inset-right) + 12px) 0 calc(env(safe-area-inset-left) + 12px)}
 .dock>*{pointer-events:auto}
-.toast{display:flex;align-items:center;gap:10px;padding:6px 6px 6px 14px;background:var(--fg);color:var(--ink);border-radius:8px;font-size:15px;font-weight:800;box-shadow:0 8px 30px rgba(0,0,0,.6)}
+.toast{display:flex;align-items:center;gap:10px;padding:6px 6px 6px 14px;background:var(--fg);color:var(--ink);font-size:15px;font-weight:700;box-shadow:0 4px 12px rgba(0,0,0,.5)}
 .toast span{flex:1;min-width:0;line-height:1.2;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
-.toast button{min-height:52px;min-width:116px;background:var(--ink);border-color:var(--ink);color:var(--fg);font-size:16px;font-weight:900;letter-spacing:.04em;text-transform:uppercase}
+.toast button{min-height:52px;min-width:116px;background:var(--ink);border-color:var(--ink);color:var(--fg);font-size:16px;font-weight:800}
 
-/* ---- Barra de pestanyes (com la de la Midnight App, amb colors UM) ---- */
-.tabbar{position:fixed;z-index:14;left:0;right:0;bottom:0;display:flex;justify-content:center;gap:4px;transform:translateZ(0);
-  background:color-mix(in srgb,var(--ink) 90%,transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-top:1px solid var(--line);
+/* ---- Barra de pestanyes: activa = taronja i una ratlla a dalt ---- */
+.tabbar{position:fixed;z-index:14;left:0;right:0;bottom:0;display:flex;justify-content:center;gap:4px;transform:translateZ(0);background:var(--ink);border-top:1px solid var(--line);
   padding:6px max(10px,env(safe-area-inset-right)) calc(env(safe-area-inset-bottom) + 6px) max(10px,env(safe-area-inset-left))}
-.tabbar button{position:relative;flex:1;min-width:0;max-width:150px;min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
-  background:none;border:0;border-radius:10px;padding:4px;color:var(--dim);font-size:12px;font-weight:800;font-stretch:105%;letter-spacing:.06em;text-transform:uppercase;line-height:1.1}
-.tabbar button:active{background:var(--panel2)}
-.tabbar button[aria-current]{color:var(--part);background:color-mix(in srgb,var(--part) 14%,transparent)}
-.tabbar button[aria-current]:before{content:"";position:absolute;top:-7px;left:50%;width:10px;height:6px;margin-left:-5px;background:var(--part);clip-path:polygon(0 0,100% 0,50% 100%)}
+.tabbar button{position:relative;flex:1;min-width:0;max-width:150px;min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+  background:none;border:0;padding:4px;color:var(--dim);font-size:11px}
+.tabbar button:active{background:var(--s1)}
+.tabbar button[aria-current]{color:var(--orange)}
+.tabbar button[aria-current]:before{content:"";position:absolute;top:-7px;left:20%;right:20%;height:3px;background:var(--orange)}
 .tabbar svg{width:24px;height:24px;flex:none}
 
 /* ---- Setlist: tira fixa a dalt amb el tema que sona i quant li queda ---- */
-.stick{position:sticky;top:0;z-index:6;margin:10px -16px 0;padding:calc(env(safe-area-inset-top) + 6px) 16px 8px;background:color-mix(in srgb,var(--ink) 92%,transparent);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
-.strip{display:flex;align-items:center;gap:10px;width:100%;min-height:56px;padding:6px 12px 6px 10px;text-align:left;background:var(--panel);border:1px solid color-mix(in srgb,var(--part) 55%,var(--line));border-left:5px solid var(--part)}
+.stick{position:sticky;top:0;z-index:6;margin:10px -16px 0;padding:calc(env(safe-area-inset-top) + 6px) 16px 8px;background:var(--ink)}
+.strip{display:flex;align-items:center;gap:10px;width:100%;min-height:56px;padding:6px 12px 6px 10px;text-align:left;background:var(--s1);border:1px solid var(--line);border-left:5px solid var(--part)}
 .strip .sx{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
-.strip .sk{font-size:12px;font-weight:900;font-stretch:110%;letter-spacing:.1em;text-transform:uppercase;color:var(--part);overflow:hidden;text-overflow:ellipsis}
+.strip .sk{font-size:12px;color:var(--orange);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .strip .st{font-size:15px;font-weight:700;color:var(--fg);overflow:hidden;text-overflow:ellipsis}
-.strip .sc{font-size:24px;font-weight:900;font-stretch:110%;color:var(--fg);font-variant-numeric:tabular-nums lining-nums}
-.strip .sc.soon{color:var(--part)}
-#tab-setlist .sec{margin-top:16px}
-li{scroll-margin-top:110px;scroll-margin-bottom:90px}
+.strip .sc{font-size:24px;font-weight:800;color:var(--fg)}
+.strip .sc.soon{color:var(--orange)}
+li{scroll-margin-top:calc(env(safe-area-inset-top) + 84px);scroll-margin-bottom:calc(env(safe-area-inset-bottom) + var(--tabh) + 14px)}
+.sl-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:12px 0 4px}
+.sl-h .slinfo{font-size:12px;color:var(--dim)}
+.sl-h button{min-height:44px;padding:6px 18px;font-size:15px}
+.sl-h button[aria-pressed="true"]{background:var(--bone);border-color:var(--bone);color:var(--ink)}
+/* Mode edició ràpida: cada tema és un botó */
+body.qe #list li{position:relative;cursor:pointer;padding-right:34px}
+body.qe #list li:after{content:"✎";position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:16px;color:var(--bone)}
+body.qe #list li:active{background:var(--s2)}
 
-/* ---- Ajustes ---- */
-#tab-ajustes .sec:first-child{margin-top:16px}
-.card{display:grid;gap:10px;padding:14px;background:var(--panel);border:1px solid var(--line);border-radius:6px}
-.card p{font-size:14px;font-weight:600;color:var(--dim);line-height:1.35}
-.src{display:grid;gap:3px}
-.src b{font-size:12px;font-weight:900;font-stretch:115%;letter-spacing:.14em;text-transform:uppercase;color:var(--orange)}
-.src span{font-size:18px;font-weight:800;color:var(--fg)}
-.src small{font-size:14px;font-weight:700;color:var(--bone);font-variant-numeric:tabular-nums lining-nums}
+/* ---- Ajustes: grups separats per línies, sense caixes ---- */
+#tab-ajustes .sec:first-child{margin-top:18px}
+.card{display:grid;gap:10px}
+.card>p:not([class]),.av .hint{font-size:13px;font-weight:600;color:var(--dim);line-height:1.35}
+.src{display:grid;gap:2px}
+.src span{font-size:20px;font-weight:800;color:var(--fg)}
+.src small{font-size:13px;font-weight:700;color:var(--dim)}
 .dt{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:8px}
-.dt label{display:flex;flex-direction:column;gap:5px;min-width:0;font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
-input{font:inherit;font-size:17px;font-weight:700;color:var(--fg);background:var(--ink);border:1px solid color-mix(in srgb,var(--bone) 30%,transparent);border-radius:6px;min-height:52px;padding:8px 10px;width:100%;min-width:0;color-scheme:dark;-webkit-appearance:none;appearance:none;text-align:left;font-variant-numeric:tabular-nums lining-nums;letter-spacing:0;text-transform:none}
+.dt label{display:flex;flex-direction:column;gap:5px;min-width:0;font-size:12px;color:var(--dim)}
+input{font:inherit;font-size:17px;font-weight:700;color:var(--fg);background:var(--ink);border:1px solid var(--line2);border-radius:0;min-height:52px;padding:8px 10px;width:100%;min-width:0;color-scheme:dark;-webkit-appearance:none;appearance:none;text-align:left;font-variant-numeric:tabular-nums lining-nums;letter-spacing:0;text-transform:none}
 input::-webkit-date-and-time-value{text-align:left}
 input:focus-visible{outline:3px solid var(--orange);outline-offset:1px}
 .card button{width:100%}
-button.save{background:var(--bone);border-color:var(--bone);color:#0b0807;font-weight:900}
+button.save{background:var(--bone);border-color:var(--bone);color:var(--ink);font-weight:800}
 button.save:active{background:#c4bea8}
-.cfm{display:grid;gap:8px;padding:12px;border:2px solid var(--orange);border-radius:6px;background:color-mix(in srgb,var(--orange) 12%,var(--panel))}
-.cfm p{color:var(--fg);font-weight:700}
+body.live #aStart.go:not(.arm){background:var(--s2);border-color:var(--line);color:var(--bone)}
+.cfm{display:grid;gap:8px;padding:12px;border:2px solid var(--orange);background:var(--s1)}
+.cfm p{color:var(--fg);font-size:14px;font-weight:700}
 .cfm div{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.cfm .yes{background:var(--orange);border-color:var(--orange);color:#0b0807}
+.cfm .yes{background:var(--orange);border-color:var(--orange);color:var(--ink)}
 .ok{color:var(--bone)!important;font-weight:700!important}
-.seg{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
-.seg button{min-height:48px;padding:6px 2px;font-size:16px}
-.seg button[aria-pressed="true"]{background:var(--orange);border-color:var(--orange);color:#0b0807}
-.info{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:14px;font-weight:700;color:var(--fg)}
-.info dt{color:var(--dim);font-weight:700}
-.info dd{margin:0;min-width:0;overflow-wrap:anywhere;font-variant-numeric:tabular-nums lining-nums}
-.ver{margin-top:14px;font-size:12px;font-weight:700;color:var(--mute);text-align:center;font-variant-numeric:tabular-nums lining-nums;overflow-wrap:anywhere}
+p.ok{font-size:14px}
+p.ok:empty{display:none}
+.seg{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+.seg button{min-height:48px;padding:6px 2px;font-size:15px}
+.seg button[aria-pressed="true"]{background:var(--bone);border-color:var(--bone);color:var(--ink)}
+.info{display:grid;gap:3px;font-size:14px;font-weight:600;color:var(--dim);overflow-wrap:anywhere}
+.info b{font-size:16px;font-weight:800;color:var(--fg)}
+.ver{font-size:12px;font-weight:700;color:var(--mute);text-align:center;overflow-wrap:anywhere;font-variant-numeric:tabular-nums lining-nums}
+
+/* ---- Setlist editada en aquest mòbil: etiqueta (Ajustes i pestanya Setlist) ---- */
+.edtag{display:flex;align-items:center;gap:10px;padding:6px 0 6px 10px;border-left:3px solid var(--orange);color:var(--fg);font-size:14px;font-weight:700;line-height:1.25}
+.edtag span{flex:1;min-width:0}
+.edtag small{display:block;font-size:12px;font-weight:600;color:var(--dim)}
+.edtag button{flex:none;min-height:44px;padding:6px 10px;font-size:14px}
+#tab-setlist .edtag{margin:8px 0}
+#tab-setlist .cfm{margin:0 0 8px}
+
+/* ---- Editor de text (pantalla sencera, a sobre de tot; s'ajusta al teclat amb visualViewport) ---- */
+body.modal{overflow:hidden}
+.ed{position:fixed;z-index:26;left:0;right:0;top:var(--vvt,0px);height:var(--vvh,100dvh);max-width:980px;margin:0 auto;display:flex;flex-direction:column;background:var(--ink);
+  padding:calc(env(safe-area-inset-top) + 8px) calc(env(safe-area-inset-right) + 12px) calc(env(safe-area-inset-bottom) + 8px) calc(env(safe-area-inset-left) + 12px)}
+body.kb .ed{padding-bottom:6px}
+.ed-h{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center}
+.ed-h h2{font-size:13px;color:var(--bone);text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;outline:0}
+.ed-h button{min-height:48px;padding:6px 14px}
+#edSave{background:var(--orange);border-color:var(--orange);color:var(--ink);font-weight:800}
+#edCancel.arm{background:var(--fg);color:var(--ink)}
+.ed-b{flex:1;min-height:0;display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.ed-m{flex:1;min-height:0;display:flex;flex-direction:column;gap:6px}
+.ed-s{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--dim);font-variant-numeric:tabular-nums lining-nums;min-width:0}
+.ed-s>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chip{flex:none;min-height:36px;padding:4px 12px;font-size:13px;font-weight:800}
+.chip.warn{color:var(--warn);border-color:var(--warn)}
+.chip.err{background:var(--orange);border-color:var(--orange);color:var(--ink)}
+textarea{flex:1;min-height:110px;width:100%;resize:none;font:500 16px/1.45 ui-monospace,"SF Mono",Menlo,Consolas,monospace;color:var(--fg);background:var(--s1);border:1px solid var(--line2);border-radius:0;padding:10px;white-space:pre-wrap;overflow-wrap:anywhere;color-scheme:dark;tab-size:2}
+textarea:focus-visible{outline:3px solid var(--orange);outline-offset:1px}
+.ed-d{flex:none;max-height:44%;overflow:auto;overscroll-behavior:contain;padding:2px 0 4px}
+.ed-d>*{margin-bottom:10px}
+.iss:empty{display:none}
+body.kb .ed-d{display:none}
+.ed-d h3{font-size:12px;color:var(--dim)}
+.ed-msg{font-size:14px;font-weight:700;color:var(--bone);min-height:1em}
+.ed-msg:empty{display:none}
+.ed-msg button{margin-left:8px;min-height:40px;padding:4px 10px;font-size:14px}
+.iss{display:grid;gap:4px}
+.iss button{display:grid;grid-template-columns:auto minmax(0,1fr);gap:2px 8px;width:100%;min-height:44px;padding:7px 10px;text-align:left;white-space:normal;font-size:14px;font-weight:700;line-height:1.25;color:var(--fg)}
+.iss button b{grid-row:span 2;font-size:12px;font-weight:800;color:var(--bone);font-variant-numeric:tabular-nums lining-nums;padding-top:1px}
+.iss button.e{border-left:4px solid var(--orange)}
+.iss button.e b{color:var(--orange)}
+.iss button.w{border-left:4px solid var(--warn)}
+.iss small{font:500 13px/1.3 ui-monospace,"SF Mono",Menlo,monospace;color:var(--dim);overflow-wrap:anywhere}
+.iss p{font-size:13px;font-weight:700;color:var(--dim)}
+.ed-box{display:grid;gap:8px;padding-top:12px;border-top:1px solid var(--line)}
+.ed-box details{font-size:13px;font-weight:600;color:var(--dim);line-height:1.4}
+.ed-box summary{min-height:44px;display:flex;align-items:center;font-size:12px;font-weight:800;letter-spacing:.02em;text-transform:uppercase;color:var(--dim);cursor:pointer}
+.ed-box details b{color:var(--fg);font-family:ui-monospace,"SF Mono",Menlo,monospace;font-weight:500}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.two button{min-width:0;white-space:normal;line-height:1.15}
+.shr{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:6px}
+.seg2{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.seg2 button{min-height:52px;min-width:46px;padding:4px 8px;font-size:20px}
+.seg2 button[aria-pressed="true"],.mks button[aria-pressed="true"]{background:var(--bone);border-color:var(--bone);color:var(--ink)}
+select{font:inherit;font-size:16px;font-weight:700;color:var(--fg);background:var(--ink);border:1px solid var(--line2);border-radius:0;min-height:52px;padding:8px 10px;width:100%;min-width:0;color-scheme:dark}
+select:focus-visible{outline:3px solid var(--orange);outline-offset:1px}
+.fl{display:flex;flex-direction:column;gap:5px;min-width:0;font-size:12px;color:var(--dim)}
+@media (orientation:landscape) and (max-height:500px){
+  .ed-b{flex-direction:row}
+  .ed-d{max-height:none;width:44%}
+  /* amb el teclat obert, el text ha de quedar a la vista */
+  body.kb .ed-s{display:none}
+  body.kb .ed-h button{min-height:40px;padding:4px 12px}
+  body.kb textarea{min-height:48px}
+}
+
+/* ---- Fitxa d'edició ràpida (des de la pestanya Setlist) ---- */
+.shade{position:fixed;inset:0;z-index:28;background:rgba(0,0,0,.62)}
+.sheet{position:fixed;z-index:29;left:0;right:0;bottom:var(--kb,0px);max-width:640px;margin:0 auto;max-height:calc(var(--vvh,100dvh) - env(safe-area-inset-top) - 8px);overflow:auto;overscroll-behavior:contain;display:grid;gap:10px;
+  padding:14px calc(env(safe-area-inset-right) + 16px) calc(env(safe-area-inset-bottom) + 14px) calc(env(safe-area-inset-left) + 16px);background:var(--s1);border-top:1px solid var(--line2)}
+body.kb .sheet{padding-bottom:12px}
+.sheet h2{font-size:12px;color:var(--dim);outline:0}
+.sheet h2 small{display:block;margin-top:3px;font-size:16px;font-weight:800;letter-spacing:0;text-transform:none;color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mks{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.mks button{min-height:46px;padding:4px 0;font-size:15px}
+.tg{display:flex;align-items:center;gap:10px;width:100%;min-height:48px;text-align:left;white-space:normal;font-size:15px;font-weight:700;line-height:1.25}
+.tg i,.sw i{flex:none;position:relative;width:44px;height:26px;background:var(--ink);border:1px solid var(--line2)}
+.tg i:after,.sw i:after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;background:var(--dim);transition:left .15s}
+.tg[aria-pressed="true"] i,.sw[aria-checked="true"] i{background:var(--bone);border-color:var(--bone)}
+.tg[aria-pressed="true"] i:after,.sw[aria-checked="true"] i:after{left:21px;background:var(--ink)}
+#qDel{color:var(--orange)}
+.qerr{font-size:14px;font-weight:800;color:var(--orange);min-height:1em}
+.qerr:empty{display:none}
+
+/* ---- Campana: temes amb avís (pestanya Setlist i «Siguientes») ---- */
+#list li{grid-template-columns:22px 50px 1fr 30px}
+.bl{align-self:center;justify-self:end;width:44px;height:44px;min-height:44px;margin:-10px -8px;padding:0;display:flex;align-items:center;justify-content:center;background:none;border:0;color:var(--past)}
+.bl svg{width:20px;height:20px}
+.bl[aria-pressed="true"]{color:var(--orange);--bf:currentColor}
+.bl:active{background:var(--s2)}
+body.qe .bl{display:none}
+.bi{display:inline-block;width:.8em;height:.8em;margin-left:.35em;vertical-align:-.04em;color:var(--orange);--bf:currentColor}
+
+/* ---- Ajustes → Avisos: interruptors (role=switch), en files separades per línies ---- */
+.sw{display:flex;align-items:center;gap:12px;width:100%;min-height:52px;padding:8px 0;background:none;border:0;border-bottom:1px solid var(--line);text-align:left;white-space:normal;line-height:1.25;font-size:16px;color:var(--fg)}
+.sw:active{background:var(--s1)}
+.sw>span:not(.pchip){flex:1;min-width:0;display:grid;gap:2px}
+.sw b{font-weight:700;color:var(--fg)}
+.sw small{font-size:13px;font-weight:600;color:var(--dim)}
+.sw.main b{font-size:17px;font-weight:800}
+.avt{display:grid;gap:6px}
+.avt .seg button{min-height:44px;font-size:15px}
+.av h3{margin-top:12px;font-size:12px;color:var(--dim)}
+.avp{display:grid}
+.pchip{flex:none;width:12px;height:28px;background:var(--c)}
+.pv{margin-top:0}
+.pv .left{font-size:56px}
+.pv .now-h{margin:0}
 
 /* ---- iPhone apaïsat: tema a l'esquerra, el que ve i els botons a la dreta ---- */
 @media (orientation:landscape) and (max-height:500px){
-  body{max-width:980px}
+  :root{--tabh:49px}
+  body{max-width:980px;padding-bottom:calc(env(safe-area-inset-bottom) + var(--tabh) + 15px)}
+  body.live{padding-top:calc(env(safe-area-inset-top) + 4px)}
+  body.live header{margin-bottom:-2px}
+  body.live .logo{width:80px;height:23px}
   .setinfo{display:none}
   .stage{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);grid-template-rows:auto auto auto 1fr;column-gap:16px;align-items:start}
   #main{display:contents}
   .stage .now,.stage .state{grid-column:1;grid-row:1/-1}
   .stage .sec{grid-column:2;grid-row:1;margin:10px 0 6px}
   .stage .next,.stage .endnote{grid-column:2;grid-row:2}
-  .stage .tools{grid-column:2;grid-row:3;margin-top:4px}
-  .left{font-size:min(20vw,64px)}
-  body.live .now{padding:12px 14px 10px}
-  .cd{margin-top:8px}.tbar{margin-top:10px}.chg{margin-top:8px;padding:6px 10px 5px}
-  .title{font-size:28px}.title.long{font-size:24px}.title.xlong,.title.xxlong{font-size:20px}
-  .next li{padding:9px 8px 9px 12px;font-size:16px}.next li.n1{font-size:18px;padding:10px 8px 10px 12px}
-  .state{padding:14px 14px 14px;margin-top:10px}
-  .hero{width:min(46%,150px);margin:0 auto 6px}
+  .stage .endnote{margin-top:10px}
+  .stage .tools{grid-column:2;grid-row:3;margin:4px 0 0;padding:8px 0 6px;box-shadow:none}
+  .left{font-size:min(20vw,48px)}
+  body.live .now{--pb:8px;padding:10px 14px var(--pb)}
+  .cd{margin-top:4px}.prog{margin-top:8px}.tbar{height:10px}
+  .title{font-size:22px;margin-top:8px;-webkit-line-clamp:2}.title.long,.title.xlong,.title.xxlong{font-size:19px}
+  .next li{padding:8px 2px 8px 0;font-size:16px}
+  .state{padding:12px 14px 12px;margin-top:10px}
+  .ph2{margin-bottom:6px}.ph2 b{font-size:16px}
+  .hero,.snom{display:none}
+  body[data-tab=ahora]:has(#main>.state) .logo{visibility:visible}
+  .k{margin-top:8px}
   .big{font-size:min(19vw,56px)}
+  .band{margin-top:10px;padding:10px 14px 8px}
   .dock{max-width:980px}
-  body{padding-bottom:calc(env(safe-area-inset-bottom) + 64px)}
   .tabbar{padding-top:4px;padding-bottom:calc(env(safe-area-inset-bottom) + 4px)}
   .tabbar button{min-height:40px;flex-direction:row;gap:8px}
   .tabbar svg{width:20px;height:20px}
   .tabbar button[aria-current]:before{top:-5px}
   #tab-ajustes{max-width:640px;margin:0 auto}
 }
+/* iPhone petit apaïsat (667×375): la columna dels botons és estreta */
+@media (orientation:landscape) and (max-height:500px) and (max-width:740px){
+  body.live .tools{gap:6px}
+  .tools button:not(.go){font-size:15px}
+}
 /* ---- Pantalles baixes (iPhone SE / 8): tot una mica més just perquè els botons hi càpiguen ---- */
 @media (orientation:portrait) and (max-height:740px){
-  body.live .now{padding:12px 14px 12px}
+  body.live .now{--pb:12px;padding:12px 14px var(--pb)}
   .title{font-size:30px;margin-top:10px}.title.long{font-size:26px}.title.xlong{font-size:22px}.title.xxlong{font-size:20px}
   .left{font-size:min(18vw,66px)}
-  .cd{margin-top:8px}.tbar{margin-top:10px}
+  .cd{margin-top:8px}.prog{margin-top:10px}
   #main .sec{margin:14px 0 6px}
-  .next li{padding:9px 8px 9px 12px;margin-bottom:5px}.next li.n1{font-size:19px;padding:11px 8px 11px 12px}
-  .tools{margin-top:12px}
+  .next li{padding:9px 2px 9px 0}
+  .state{padding:14px 14px 12px}
+  .ph2{margin-bottom:8px}.ph2 b{font-size:18px}
+  .hero{width:min(50%,190px)}
+  .k{margin-top:10px}
+  .big{font-size:min(16vw,60px)}
+  .state p{margin-top:6px}
+  .band{margin-top:12px}
 }
 
 /* ---- Menys moviment ---- */
 @media (prefers-reduced-motion:reduce){
   .now.soon{animation:none}
   .now.flash,.state.flash{animation:none;outline:3px solid var(--fg);outline-offset:-3px}
-  button:active{transform:none}
+  .tg i:after,.sw i:after{transition:none}
 }
 </style>
 </head>
 <body>
-<svg class="defs" aria-hidden="true" width="0" height="0"><defs><g id="um-w"><g style="fill:var(--logo-c,#D6D0BA)"><path d="M651.3 268.9L703.6 268.9L703.6 473.8L651.3 473.8ZM836.8 398.4L757 268.9L711.9 268.9L711.9 473.8L762 473.8L760.6 348.6L839.2 473.8L884.7 473.8L884.7 268.9L834.5 268.9ZM944.7 268.9L892.9 268.9L892.9 473.8L945.2 473.8L945.2 457.1C936.9 450.4 931.5 440.1 931.5 428.5C931.5 417 936.9 406.7 945.2 400L945.2 345.8L945.8 345.8L973.5 392.4C991.1 395 1004.7 410.2 1004.7 428.5C1004.7 432.8 1003.9 437 1002.5 440.8L1004.5 444.1L1022.5 473.8L1085.3 473.8ZM328.7 397.5L328.7 268.9L276.9 268.9L199.6 381.5L199.1 381.5L199.1 268.9L147.3 268.9L6.6 473.8L66.7 473.8L146.2 351.6L146.8 351.6L146.8 473.8L190.2 473.8L275.8 351.6L276.4 351.6L276.4 473.8L276.4 473.8L328.7 473.8L339.2 473.8L357.2 444.1L358.9 441.2C357.5 437.3 356.6 433 356.6 428.5C356.6 410 370.4 394.7 388.3 392.3L415.9 345.8L416.5 345.8L416.5 400.3C424.6 407 429.8 417.1 429.8 428.5C429.8 439.9 424.6 450 416.5 456.8L416.5 473.8L468.8 473.8L468.8 268.9L417 268.9ZM188 260.6C200.2 260.6 210.5 256.3 219 247.8C227.6 239.3 231.9 228.9 231.9 216.8L231.9 169.6L206.8 169.6L206.8 219.1C206.8 224.2 205 228.6 201.3 232.3C197.6 236 193.2 237.8 188 237.8C182.9 237.8 178.5 236 174.8 232.3C171.1 228.6 169.3 224.2 169.3 219.1L169.3 169.6L144.2 169.6L144.2 216.8C144.2 228.9 148.5 239.3 157 247.8C165.6 256.3 175.9 260.6 188 260.6M262.6 211.1C262.6 205.9 264.4 201.5 268.1 197.9C271.8 194.2 276.2 192.3 281.4 192.3C286.5 192.3 290.9 194.2 294.6 197.9C298.3 201.5 300.1 205.9 300.1 211.1L300.1 260.6L325.2 260.6L325.2 213.4C325.2 201.2 320.9 190.9 312.4 182.4C303.8 173.8 293.5 169.6 281.4 169.6C269.2 169.6 258.9 173.8 250.3 182.4C241.8 190.9 237.5 201.2 237.5 213.4L237.5 260.6L262.6 260.6ZM355.9 169.6L330.9 169.6L330.9 260.6L355.9 260.6ZM492.5 260.6L582.4 260.6L582.4 237.8L492.5 237.8C487.5 237.8 483.4 236 480.2 232.4C477.1 228.8 475.5 223.1 475.5 215.1C475.5 207.1 477.1 201.3 480.2 197.7C483.4 194.1 487.5 192.3 492.5 192.3L550 192.3C552.1 192.3 553.9 192.9 555.3 194.1C556.7 195.3 557.4 196.7 557.4 198.4C557.4 199.9 556.7 201.3 555.3 202.5C553.9 203.7 552.1 204.3 550 204.3L486.9 204.3L486.9 225.9L550 225.9C559.8 225.9 567.6 223.1 573.6 217.6C579.5 212.1 582.4 205.6 582.4 198.4C582.4 196.3 582.1 194.1 581.5 191.7C580.8 189.3 579.7 186.8 578.1 184.1C576.5 181.5 574.5 179.1 572.1 177C569.8 174.8 566.6 173.1 562.8 171.7C559 170.3 554.7 169.6 550 169.6L492.5 169.6C464.5 169.6 450.4 184.7 450.4 215.1C450.4 245.4 464.5 260.6 492.5 260.6M733.5 260.6L786.1 260.6C794.9 260.6 802.1 257.8 807.5 252.3C813 246.8 815.7 240.4 815.7 233.3C815.7 225.8 812.7 219.4 806.7 214C800.7 208.7 793.9 206 786.1 206L753.1 206C750.7 206 748.8 205.3 747.3 203.9C745.9 202.6 745.2 201 745.2 199.1C745.2 197.3 745.9 195.7 747.3 194.4C748.8 193 750.7 192.3 753.1 192.3L815.7 192.3L815.7 169.6L750.8 169.6C745.8 169.6 741.3 170.4 737.4 172.2C733.4 173.9 730.2 176.2 727.7 179.1C725.2 181.9 723.3 185.1 722.1 188.5C720.8 192 720.1 195.5 720.1 199.1C720.1 207.7 723 214.8 728.9 220.4C734.7 225.9 742 228.7 750.8 228.7L784.4 228.7C786 228.7 787.5 229.4 788.7 230.6C790 231.9 790.7 233.3 790.7 235C790.7 236.7 790 238.1 788.7 239.4C787.5 240.6 786 241.3 784.4 241.3L733.5 241.3L720.1 241.3L650.1 241.3C648.5 241.3 647.1 240.6 645.8 239.4C644.5 238.1 643.9 236.7 643.9 235C643.9 233.3 644.5 231.9 645.8 230.6C647.1 229.4 648.5 228.7 650.1 228.7L683.7 228.7C692.5 228.7 699.8 225.9 705.7 220.4C711.5 214.8 714.4 207.7 714.4 199.1C714.4 195.5 713.8 192 712.5 188.5C711.2 185.1 709.3 181.9 706.9 179.1C704.4 176.2 701.2 173.9 697.2 172.2C693.2 170.4 688.7 169.6 683.7 169.6L625.7 169.6C615.3 169.6 606.4 172.9 599.1 179.6C591.8 186.3 588.1 194.3 588.1 203.7L588.1 260.6L613.2 260.6L613.2 203.7C613.2 200.6 614.4 197.9 616.8 195.7C619.2 193.4 622.2 192.3 625.7 192.3L681.4 192.3C683.9 192.3 685.8 193 687.2 194.4C688.7 195.7 689.4 197.3 689.4 199.1C689.4 201 688.7 202.6 687.2 203.9C685.8 205.3 683.9 206 681.4 206L648.4 206C640.7 206 633.8 208.7 627.8 214C621.8 219.4 618.8 225.8 618.8 233.3C618.8 240.4 621.6 246.8 627 252.3C632.5 257.8 639.6 260.6 648.4 260.6L720.1 260.6ZM850 197.7C853.2 194.1 857.3 192.3 862.3 192.3L910.1 192.3C915.1 192.3 919.2 194.1 922.4 197.7C925.6 201.3 927.2 207.1 927.2 215.1C927.2 223.1 925.6 228.8 922.4 232.4C919.2 236 915.1 237.8 910.1 237.8L862.3 237.8C857.3 237.8 853.2 236 850 232.4C846.8 228.8 845.2 223.1 845.2 215.1C845.2 207.1 846.8 201.3 850 197.7M862.3 260.6L910.1 260.6C938.2 260.6 952.2 245.4 952.2 215.1C952.2 184.7 938.2 169.6 910.1 169.6L862.3 169.6C834.2 169.6 820.2 184.7 820.2 215.1C820.2 245.4 834.2 260.6 862.3 260.6M427.7 169.6C427.7 169.6 412.2 218.1 409.1 227.8C408.9 228.4 408.2 228.4 408 227.8C404.9 218.1 389.4 169.6 389.4 169.6L361.6 169.6L380 229.8C383.1 239.8 386.9 247.2 391.6 252.3C396.6 257.8 402.3 260.6 408.5 260.6C414.8 260.6 420.5 257.8 425.5 252.3C430.1 247.3 434.1 239.7 437.1 229.7L455.5 169.6ZM586.3 473.8L530.1 385.1L529.6 385.1L529.6 473.8L477 473.8L477 268.9L529.6 268.9L529.6 361.1L530.1 361.1L588.2 268.9L643.2 268.9L575.1 371L647.7 473.8Z"/></g><g style="fill:var(--logo-o,#FF4514)"><path d="M393.2 457.6C377.1 457.6 364.1 444.6 364.1 428.5C364.1 412.5 377.1 399.4 393.2 399.4C409.2 399.4 422.3 412.5 422.3 428.5C422.3 444.6 409.2 457.6 393.2 457.6M968.1 457.6C952 457.6 939 444.6 939 428.5C939 412.5 952 399.4 968.1 399.4C984.1 399.4 997.2 412.5 997.2 428.5C997.2 444.6 984.1 457.6 968.1 457.6"/></g></g><g id="um-l" style="fill:var(--logo-l,#FF4514)"><path d="M885.2 504.8L830.5 599.7L261.5 599.7L206.8 504.8L266.4 401.6L266.4 389.6L200.7 503.3L199.8 504.8L258.1 605.7L833.9 605.7L892.2 504.8L880 483.8L873.1 483.8ZM491.2 12.1L600.8 12.1L685.9 159.6C688.5 159.7 691 160.1 693.4 160.6L605.1 7.6L604.2 6.1L487.8 6.1L397.6 162.4C398.1 164.2 399 166.9 400 170.1ZM820.9 504.8L798.3 543.9L293.7 543.9L271.1 504.8L283.3 483.8L276.4 483.8L265.1 503.3L264.2 504.8L290.2 549.9L801.8 549.9L827.8 504.8L771.2 406.9L771.4 419.1ZM467.6 164.3C467.6 164.3 467.7 164.2 467.8 164.2L523.4 67.9L568.6 67.9L621.6 159.7C623 159.6 624.3 159.6 625.7 159.6L628.5 159.6L572.9 63.4L572 61.9L520 61.9L463.5 159.6L469 159.6ZM507.2 39.7L584.8 39.7L654 159.6L661 159.6L589.2 35.2L588.3 33.7L503.7 33.7L431 159.6L438 159.6ZM853.3 504.8L814.5 572.1L277.5 572.1L238.6 504.8L266.4 456.8L266.4 444.8L231.7 504.8L274 578.1L818 578.1L860.3 504.8L848.1 483.8L841.2 483.8ZM539.5 95.7L552.5 95.7L595.2 169.8C596.9 168.5 598.5 167.4 600.2 166.4L556.8 91.2L556 89.7L536 89.7L495.7 159.6L502.6 159.6ZM788.7 504.8L782.2 516.1L309.8 516.1L303.3 504.8L315.5 483.8L308.5 483.8L297.2 503.3L296.4 504.8L306.3 522.1L785.7 522.1L795.6 504.8L771.9 463.7L772 475.9Z"/></g><symbol id="um-full" viewBox="0 0 1091 612"><use href="#um-l"/><use href="#um-w"/></symbol><symbol id="um-word" viewBox="5 168 1082 308"><use href="#um-w"/></symbol><symbol id="um-tri" viewBox="0 0 700 610"><path d="M64.9 596.7L633.8 596.7L688.6 501.8L404.1 9.1L294.6 9.1L10.1 501.8ZM637.3 602.7L61.4 602.7L3.2 501.8L4 500.3L291.1 3.1L407.6 3.1L408.4 4.6L695.5 501.8ZM97.1 540.9L601.6 540.9L624.2 501.8L371.9 64.9L326.7 64.9L74.5 501.8ZM605.1 546.9L93.6 546.9L67.5 501.8L323.3 58.9L375.4 58.9L376.2 60.4L631.1 501.8ZM113.1 513.1L585.5 513.1L592 501.8L355.8 92.7L342.8 92.7L106.6 501.8ZM589 519.1L109.7 519.1L99.7 501.8L339.4 86.7L359.3 86.7L360.2 88.2L599 501.8ZM80.9 568.9L617.8 568.9L656.5 501.8L388.1 36.8L310.6 36.8L42.1 501.8ZM621.2 574.9L77.4 574.9L35.2 501.8L307.1 30.8L391.5 30.8L392.4 32.3L663.5 501.8Z"/></symbol></defs></svg>
+<svg class="defs" aria-hidden="true" width="0" height="0"><defs><g id="um-w"><g style="fill:var(--logo-c,#D6D0BA)"><path d="M651.3 268.9L703.6 268.9L703.6 473.8L651.3 473.8ZM836.8 398.4L757 268.9L711.9 268.9L711.9 473.8L762 473.8L760.6 348.6L839.2 473.8L884.7 473.8L884.7 268.9L834.5 268.9ZM944.7 268.9L892.9 268.9L892.9 473.8L945.2 473.8L945.2 457.1C936.9 450.4 931.5 440.1 931.5 428.5C931.5 417 936.9 406.7 945.2 400L945.2 345.8L945.8 345.8L973.5 392.4C991.1 395 1004.7 410.2 1004.7 428.5C1004.7 432.8 1003.9 437 1002.5 440.8L1004.5 444.1L1022.5 473.8L1085.3 473.8ZM328.7 397.5L328.7 268.9L276.9 268.9L199.6 381.5L199.1 381.5L199.1 268.9L147.3 268.9L6.6 473.8L66.7 473.8L146.2 351.6L146.8 351.6L146.8 473.8L190.2 473.8L275.8 351.6L276.4 351.6L276.4 473.8L276.4 473.8L328.7 473.8L339.2 473.8L357.2 444.1L358.9 441.2C357.5 437.3 356.6 433 356.6 428.5C356.6 410 370.4 394.7 388.3 392.3L415.9 345.8L416.5 345.8L416.5 400.3C424.6 407 429.8 417.1 429.8 428.5C429.8 439.9 424.6 450 416.5 456.8L416.5 473.8L468.8 473.8L468.8 268.9L417 268.9ZM188 260.6C200.2 260.6 210.5 256.3 219 247.8C227.6 239.3 231.9 228.9 231.9 216.8L231.9 169.6L206.8 169.6L206.8 219.1C206.8 224.2 205 228.6 201.3 232.3C197.6 236 193.2 237.8 188 237.8C182.9 237.8 178.5 236 174.8 232.3C171.1 228.6 169.3 224.2 169.3 219.1L169.3 169.6L144.2 169.6L144.2 216.8C144.2 228.9 148.5 239.3 157 247.8C165.6 256.3 175.9 260.6 188 260.6M262.6 211.1C262.6 205.9 264.4 201.5 268.1 197.9C271.8 194.2 276.2 192.3 281.4 192.3C286.5 192.3 290.9 194.2 294.6 197.9C298.3 201.5 300.1 205.9 300.1 211.1L300.1 260.6L325.2 260.6L325.2 213.4C325.2 201.2 320.9 190.9 312.4 182.4C303.8 173.8 293.5 169.6 281.4 169.6C269.2 169.6 258.9 173.8 250.3 182.4C241.8 190.9 237.5 201.2 237.5 213.4L237.5 260.6L262.6 260.6ZM355.9 169.6L330.9 169.6L330.9 260.6L355.9 260.6ZM492.5 260.6L582.4 260.6L582.4 237.8L492.5 237.8C487.5 237.8 483.4 236 480.2 232.4C477.1 228.8 475.5 223.1 475.5 215.1C475.5 207.1 477.1 201.3 480.2 197.7C483.4 194.1 487.5 192.3 492.5 192.3L550 192.3C552.1 192.3 553.9 192.9 555.3 194.1C556.7 195.3 557.4 196.7 557.4 198.4C557.4 199.9 556.7 201.3 555.3 202.5C553.9 203.7 552.1 204.3 550 204.3L486.9 204.3L486.9 225.9L550 225.9C559.8 225.9 567.6 223.1 573.6 217.6C579.5 212.1 582.4 205.6 582.4 198.4C582.4 196.3 582.1 194.1 581.5 191.7C580.8 189.3 579.7 186.8 578.1 184.1C576.5 181.5 574.5 179.1 572.1 177C569.8 174.8 566.6 173.1 562.8 171.7C559 170.3 554.7 169.6 550 169.6L492.5 169.6C464.5 169.6 450.4 184.7 450.4 215.1C450.4 245.4 464.5 260.6 492.5 260.6M733.5 260.6L786.1 260.6C794.9 260.6 802.1 257.8 807.5 252.3C813 246.8 815.7 240.4 815.7 233.3C815.7 225.8 812.7 219.4 806.7 214C800.7 208.7 793.9 206 786.1 206L753.1 206C750.7 206 748.8 205.3 747.3 203.9C745.9 202.6 745.2 201 745.2 199.1C745.2 197.3 745.9 195.7 747.3 194.4C748.8 193 750.7 192.3 753.1 192.3L815.7 192.3L815.7 169.6L750.8 169.6C745.8 169.6 741.3 170.4 737.4 172.2C733.4 173.9 730.2 176.2 727.7 179.1C725.2 181.9 723.3 185.1 722.1 188.5C720.8 192 720.1 195.5 720.1 199.1C720.1 207.7 723 214.8 728.9 220.4C734.7 225.9 742 228.7 750.8 228.7L784.4 228.7C786 228.7 787.5 229.4 788.7 230.6C790 231.9 790.7 233.3 790.7 235C790.7 236.7 790 238.1 788.7 239.4C787.5 240.6 786 241.3 784.4 241.3L733.5 241.3L720.1 241.3L650.1 241.3C648.5 241.3 647.1 240.6 645.8 239.4C644.5 238.1 643.9 236.7 643.9 235C643.9 233.3 644.5 231.9 645.8 230.6C647.1 229.4 648.5 228.7 650.1 228.7L683.7 228.7C692.5 228.7 699.8 225.9 705.7 220.4C711.5 214.8 714.4 207.7 714.4 199.1C714.4 195.5 713.8 192 712.5 188.5C711.2 185.1 709.3 181.9 706.9 179.1C704.4 176.2 701.2 173.9 697.2 172.2C693.2 170.4 688.7 169.6 683.7 169.6L625.7 169.6C615.3 169.6 606.4 172.9 599.1 179.6C591.8 186.3 588.1 194.3 588.1 203.7L588.1 260.6L613.2 260.6L613.2 203.7C613.2 200.6 614.4 197.9 616.8 195.7C619.2 193.4 622.2 192.3 625.7 192.3L681.4 192.3C683.9 192.3 685.8 193 687.2 194.4C688.7 195.7 689.4 197.3 689.4 199.1C689.4 201 688.7 202.6 687.2 203.9C685.8 205.3 683.9 206 681.4 206L648.4 206C640.7 206 633.8 208.7 627.8 214C621.8 219.4 618.8 225.8 618.8 233.3C618.8 240.4 621.6 246.8 627 252.3C632.5 257.8 639.6 260.6 648.4 260.6L720.1 260.6ZM850 197.7C853.2 194.1 857.3 192.3 862.3 192.3L910.1 192.3C915.1 192.3 919.2 194.1 922.4 197.7C925.6 201.3 927.2 207.1 927.2 215.1C927.2 223.1 925.6 228.8 922.4 232.4C919.2 236 915.1 237.8 910.1 237.8L862.3 237.8C857.3 237.8 853.2 236 850 232.4C846.8 228.8 845.2 223.1 845.2 215.1C845.2 207.1 846.8 201.3 850 197.7M862.3 260.6L910.1 260.6C938.2 260.6 952.2 245.4 952.2 215.1C952.2 184.7 938.2 169.6 910.1 169.6L862.3 169.6C834.2 169.6 820.2 184.7 820.2 215.1C820.2 245.4 834.2 260.6 862.3 260.6M427.7 169.6C427.7 169.6 412.2 218.1 409.1 227.8C408.9 228.4 408.2 228.4 408 227.8C404.9 218.1 389.4 169.6 389.4 169.6L361.6 169.6L380 229.8C383.1 239.8 386.9 247.2 391.6 252.3C396.6 257.8 402.3 260.6 408.5 260.6C414.8 260.6 420.5 257.8 425.5 252.3C430.1 247.3 434.1 239.7 437.1 229.7L455.5 169.6ZM586.3 473.8L530.1 385.1L529.6 385.1L529.6 473.8L477 473.8L477 268.9L529.6 268.9L529.6 361.1L530.1 361.1L588.2 268.9L643.2 268.9L575.1 371L647.7 473.8Z"/></g><g style="fill:var(--logo-o,#FF4514)"><path d="M393.2 457.6C377.1 457.6 364.1 444.6 364.1 428.5C364.1 412.5 377.1 399.4 393.2 399.4C409.2 399.4 422.3 412.5 422.3 428.5C422.3 444.6 409.2 457.6 393.2 457.6M968.1 457.6C952 457.6 939 444.6 939 428.5C939 412.5 952 399.4 968.1 399.4C984.1 399.4 997.2 412.5 997.2 428.5C997.2 444.6 984.1 457.6 968.1 457.6"/></g></g><g id="um-l" style="fill:var(--logo-l,#FF4514)"><path d="M885.2 504.8L830.5 599.7L261.5 599.7L206.8 504.8L266.4 401.6L266.4 389.6L200.7 503.3L199.8 504.8L258.1 605.7L833.9 605.7L892.2 504.8L880 483.8L873.1 483.8ZM491.2 12.1L600.8 12.1L685.9 159.6C688.5 159.7 691 160.1 693.4 160.6L605.1 7.6L604.2 6.1L487.8 6.1L397.6 162.4C398.1 164.2 399 166.9 400 170.1ZM820.9 504.8L798.3 543.9L293.7 543.9L271.1 504.8L283.3 483.8L276.4 483.8L265.1 503.3L264.2 504.8L290.2 549.9L801.8 549.9L827.8 504.8L771.2 406.9L771.4 419.1ZM467.6 164.3C467.6 164.3 467.7 164.2 467.8 164.2L523.4 67.9L568.6 67.9L621.6 159.7C623 159.6 624.3 159.6 625.7 159.6L628.5 159.6L572.9 63.4L572 61.9L520 61.9L463.5 159.6L469 159.6ZM507.2 39.7L584.8 39.7L654 159.6L661 159.6L589.2 35.2L588.3 33.7L503.7 33.7L431 159.6L438 159.6ZM853.3 504.8L814.5 572.1L277.5 572.1L238.6 504.8L266.4 456.8L266.4 444.8L231.7 504.8L274 578.1L818 578.1L860.3 504.8L848.1 483.8L841.2 483.8ZM539.5 95.7L552.5 95.7L595.2 169.8C596.9 168.5 598.5 167.4 600.2 166.4L556.8 91.2L556 89.7L536 89.7L495.7 159.6L502.6 159.6ZM788.7 504.8L782.2 516.1L309.8 516.1L303.3 504.8L315.5 483.8L308.5 483.8L297.2 503.3L296.4 504.8L306.3 522.1L785.7 522.1L795.6 504.8L771.9 463.7L772 475.9Z"/></g><symbol id="um-full" viewBox="0 0 1091 612"><use href="#um-l"/><use href="#um-w"/></symbol><symbol id="um-word" viewBox="5 168 1082 308"><use href="#um-w"/></symbol><symbol id="um-tri" viewBox="0 0 700 610"><path d="M64.9 596.7L633.8 596.7L688.6 501.8L404.1 9.1L294.6 9.1L10.1 501.8ZM637.3 602.7L61.4 602.7L3.2 501.8L4 500.3L291.1 3.1L407.6 3.1L408.4 4.6L695.5 501.8ZM97.1 540.9L601.6 540.9L624.2 501.8L371.9 64.9L326.7 64.9L74.5 501.8ZM605.1 546.9L93.6 546.9L67.5 501.8L323.3 58.9L375.4 58.9L376.2 60.4L631.1 501.8ZM113.1 513.1L585.5 513.1L592 501.8L355.8 92.7L342.8 92.7L106.6 501.8ZM589 519.1L109.7 519.1L99.7 501.8L339.4 86.7L359.3 86.7L360.2 88.2L599 501.8ZM80.9 568.9L617.8 568.9L656.5 501.8L388.1 36.8L310.6 36.8L42.1 501.8ZM621.2 574.9L77.4 574.9L35.2 501.8L307.1 30.8L391.5 30.8L392.4 32.3L663.5 501.8Z"/></symbol><symbol id="um-bell" viewBox="0 0 24 24"><path d="M12 3.5a5.5 5.5 0 0 0-5.5 5.5v3.7L4.6 16.2h14.8l-1.9-3.5V9A5.5 5.5 0 0 0 12 3.5Z" fill="var(--bf,none)" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M9.7 19.2a2.4 2.4 0 0 0 4.6 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol></defs></svg>
 <header>
   <svg class="logo" role="img" aria-label="Universo Makina"><use href="#um-word"/></svg>
   <span class="clock" id="clock">--:--</span>
@@ -296,11 +462,11 @@ button.save:active{background:#c4bea8}
 <div class="stage">
 <main id="main"></main>
 <div class="tools">
-  <button class="go" id="bStart">▶ Empieza ahora</button>
-  <button id="bMinus" aria-label="Retrasar 10 segundos">◂ 10&nbsp;s<small>retrasar</small></button>
-  <button id="bPlus" aria-label="Adelantar 10 segundos">10&nbsp;s ▸<small>adelantar</small></button>
-  <button id="bReset" aria-label="Volver a la hora prevista">Prevista<small id="bResetS">hora del set</small></button>
-  <button id="bRestart" aria-label="Reiniciar: el set empieza ahora (toca dos veces)">Reiniciar<small>empieza ahora</small></button>
+  <button class="go" id="bStart">Empezar ahora</button>
+  <button id="bMinus" aria-label="Retrasar el set 10 segundos">−10&nbsp;s</button>
+  <button id="bPlus" aria-label="Adelantar el set 10 segundos">+10&nbsp;s</button>
+  <button id="bReset" aria-label="Volver a la hora prevista">Prevista</button>
+  <button id="bRestart" aria-label="Reiniciar: el set empieza ahora (toca dos veces)">Reiniciar</button>
   <p class="note" id="sync" role="status"></p>
 </div>
 </div>
@@ -309,41 +475,91 @@ button.save:active{background:#c4bea8}
 <!-- Pestanya «Setlist»: tot el set, amb una tira fixa a dalt (tema actual + compte enrere) -->
 <section class="tab" id="tab-setlist" aria-label="Setlist" hidden>
 <div class="stick"><button class="strip" id="strip" aria-label="Ir al tema actual en la lista"><span class="sx"><span class="sk" id="sK"></span><span class="st" id="sT"></span></span><span class="sc" id="sC"></span></button></div>
-<h2 class="sec">Setlist</h2>
-<p class="lhint">Tiempos desde el inicio del set (0:00 = primer tema)</p>
+<div class="sl-h"><h2 class="slinfo" id="slInfo">Setlist</h2><button type="button" id="bQE" aria-pressed="false">Editar</button></div>
+<div class="edtag" id="slTag" hidden><span id="slTagT"></span><button type="button" id="slOrig">Volver al original</button></div>
+<div class="cfm" id="slCfm" hidden><p>¿Volver al original? Se pierden tus cambios.</p><div><button class="yes" data-orig-yes>Volver</button><button data-orig-no>Cancelar</button></div></div>
 <div id="list"></div>
 </section>
 
-<!-- Pestanya «Ajustes»: hora d'inici al mòbil, sincronització, avís i dades del set -->
+<!-- Pestanya «Ajustes»: hora d'inici al mòbil, sincronització, avisos i dades del set -->
 <section class="tab" id="tab-ajustes" aria-label="Ajustes" hidden>
-<h2 class="sec">Inicio del set</h2>
+<h2 class="sec">Inicio</h2>
 <div class="card">
-  <p class="src"><b>Ahora manda</b><span id="srcT"></span><small id="srcD"></small></p>
-  <p>Con fecha y hora, la app va sola con el reloj del móvil. Usa ◂ 10&nbsp;s / 10&nbsp;s ▸ para cuadrarla.</p>
+  <p class="src"><span id="srcT"></span><small id="srcD"></small></p>
   <div class="dt">
     <label>Fecha<input type="date" id="iDate"></label>
     <label>Hora<input type="time" id="iTime" step="1"></label>
   </div>
-  <button class="save" id="bSave">Guardar fecha y hora</button>
-  <div class="cfm" id="cfm" hidden><p id="cfmT"></p><div><button class="yes" id="cfmYes">Sí, guardar</button><button id="cfmNo">Cancelar</button></div></div>
-  <button id="bFile" hidden>Volver a la hora del archivo</button>
+  <button class="save" id="bSave">Guardar</button>
+  <div class="cfm" id="cfm" hidden><p id="cfmT"></p><div><button class="yes" id="cfmYes">Guardar</button><button id="cfmNo">Cancelar</button></div></div>
+  <button id="bFile" hidden>Usar la del archivo</button>
   <p class="ok" id="aMsg" role="status"></p>
 </div>
-<h2 class="sec">Sincronizar a mano</h2>
+<h2 class="sec">Directo</h2>
 <div class="card">
-  <button class="go" id="aStart">▶ Empieza ahora</button>
-  <button id="aReset">Volver a la hora prevista</button>
+  <button class="go" id="aStart">Empezar ahora</button>
+  <button id="aReset">Quitar ajuste</button>
   <p id="aSync"></p>
 </div>
-<h2 class="sec">Aviso antes del cambio</h2>
+<h2 class="sec">Avisos</h2>
+<!-- Avisos dins de l'app (pantalla encesa). Es construeix des del JS (avUI); tot es guarda a um.avisos -->
+<div class="card av" id="av"></div>
+<h2 class="sec">Setlist</h2>
 <div class="card">
-  <div class="seg" role="group" aria-label="Segundos de aviso antes del siguiente tema" id="seg"></div>
-  <p>Segundos antes del siguiente tema: el número se pone en color y el recuadro late. 0 = sin aviso.</p>
+  <p class="src"><span id="txS"></span><small id="txD"></small></p>
+  <div class="edtag" id="txTag" hidden><span id="txTagT"></span></div>
+  <button class="save" id="bEdit">Editar setlist</button>
+  <button id="bOrig" hidden>Volver al original</button>
+  <div class="cfm" id="oCfm" hidden><p>¿Volver al original? Se pierden tus cambios.</p><div><button class="yes" data-orig-yes>Volver</button><button data-orig-no>Cancelar</button></div></div>
+  <p>Solo en este móvil. Para pasarla al Mac: Editar setlist → Copiar.</p>
 </div>
 <h2 class="sec">Set</h2>
-<div class="card"><dl class="info" id="info"></dl></div>
-<p class="ver">Versión <span id="ver">—</span></p>
-<footer>Universo Makina</footer>
+<div class="card"><div class="info" id="info"></div></div>
+<footer><p class="ver">v<span id="ver">—</span></p></footer>
+</section>
+
+<!-- Editor del setlist (text). Els canvis es guarden només en aquest mòbil: um.txt.<id> -->
+<section class="ed" id="ed" role="dialog" aria-modal="true" aria-labelledby="edT" hidden>
+  <div class="ed-h"><button type="button" id="edCancel">Cancelar</button><h2 id="edT" tabindex="-1">Editar setlist</h2><button type="button" id="edSave">Guardar</button></div>
+  <div class="ed-b">
+    <div class="ed-m">
+      <div class="ed-s"><span id="edStat"></span><button type="button" class="chip" id="edChip" aria-live="polite"></button></div>
+      <textarea id="edTa" aria-label="Setlist en texto" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false" wrap="soft"></textarea>
+    </div>
+    <div class="ed-d" id="edD">
+      <p class="ed-msg" id="edMsg" role="status"></p>
+      <div class="cfm" id="edCfm" hidden><p id="edCfmT"></p><div><button class="yes" id="edForce">Guardar igual</button><button id="edBack">Volver</button></div></div>
+      <div class="iss" id="edIss"></div>
+      <div class="ed-box">
+        <label class="fl">Desplazar tiempos desde<select id="shFrom"></select></label>
+        <div class="shr">
+          <div class="seg2" role="group" aria-label="Sentido"><button type="button" id="shM" aria-pressed="false" aria-label="Antes (restar)">−</button><button type="button" id="shP" aria-pressed="true" aria-label="Después (sumar)">+</button></div>
+          <input id="shV" inputmode="decimal" placeholder="mm:ss" aria-label="Cuánto desplazar (mm:ss)" autocomplete="off">
+          <button type="button" id="shGo">Aplicar</button>
+        </div>
+      </div>
+      <div class="ed-box">
+        <div class="two"><button type="button" id="edCopy">Copiar</button><button type="button" id="edOrig">Volver al original</button></div>
+        <div class="cfm" id="edOCfm" hidden><p>¿Volver al original? Se pierden tus cambios.</p><div><button class="yes" data-orig-yes>Volver</button><button data-orig-no>Cancelar</button></div></div>
+        <details><summary>Formato</summary><p><b># Parte 1</b><br><b>[rosa]</b><br><b>00:01:40-00:03:20 2. +1 Artista – Tema</b></p><p>Colores: rojo, naranja, amarillo, verde, cian, azul, lila, rosa. La hora final es opcional.</p></details>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Edició ràpida d'un tema (des de la pestanya Setlist): reescriu el mateix text -->
+<div class="shade" id="shade" hidden></div>
+<section class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="qH" hidden>
+  <h2 id="qH" tabindex="-1"></h2>
+  <label class="fl">Título<input id="qT" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"></label>
+  <div class="fl"><span id="qML">Marca</span><div class="mks" id="qM" role="group" aria-labelledby="qML"></div></div>
+  <div class="dt"><label>Inicio<input id="qA" inputmode="decimal" autocomplete="off" placeholder="h:mm:ss"></label><label>Fin<input id="qB" inputmode="decimal" autocomplete="off" placeholder="h:mm:ss"></label></div>
+  <button type="button" class="tg" id="qMove" aria-pressed="false"><i></i><span id="qMoveT">Mover los siguientes</span></button>
+  <button type="button" class="tg" id="qStar" aria-pressed="false"><i></i><span>Avisarme de este tema</span></button>
+  <p class="qerr" id="qErr" role="alert"></p>
+  <div class="two"><button class="save" type="button" id="qSave">Guardar</button><button type="button" id="qCancel">Cancelar</button></div>
+  <div class="two" id="qMore"><button type="button" id="qIns">Añadir detrás</button><button type="button" id="qDel">Borrar</button></div>
+  <div class="cfm" id="qDelCfm" hidden><p id="qDelT"></p><button type="button" class="tg" id="qDelMove" aria-pressed="true"><i></i><span id="qDelMoveT"></span></button><div><button class="yes" type="button" id="qDelYes">Borrar</button><button type="button" id="qDelNo">Cancelar</button></div></div>
 </section>
 
 <div class="dock">
@@ -395,57 +611,89 @@ function parseSet(txt) {
   return { parts: parts.filter(p => p.n), tracks };
 }
 
-const { parts, tracks } = parseSet(SET.txt);
-const TOTAL = tracks.length ? tracks.at(-1).b : 0;
+// El setlist que mana: el del fitxer (SET.txt) o, si s'ha editat en aquest mòbil, el guardat a um.txt.<id>. Es pot tornar a carregar en marxa (load).
+let parts = [], tracks = [], TOTAL = 0;
 
 // Només per mostrar (les dades no canvien): «Part 3» → «Parte 3», i marques escrites al final del títol
 // («Outside +2 (retallar)», «Mundian To Bach +1») → etiqueta al davant, com les de «+1 Títol».
 const pname = p => p.nom.replace(/^Part(?=\s*\d)/i, 'Parte');
-tracks.forEach(x => {
-  let t = x.t, m = x.mk;
+const shown = (t, m) => {
   if (!m) { const e = t.match(/^(.*\S)\s+([+-]\d)(\s*\([^)]*\))?\s*$/); if (e) { t = e[1] + (e[3] || ''); m = e[2]; } }
-  x.dt = t; x.dm = m;
-});
+  return { dt: t, dm: m };
+};
 
 // Hora d'inici (tot es guarda en aquest mòbil). Mana, per ordre:
-//   1) sincronitzat a mà («Empieza ahora», ±10 s)  →  um.start.<id>
+//   1) sincronitzat a mà («Empezar ahora», ±10 s)  →  um.start.<id>
 //   2) data i hora posades a «Ajustes»              →  um.plan.<id>  (hora local del mòbil)
-//   3) «inici» del set.json                         (sense hora o mal escrita → 0: s'espera a «Empieza ahora»)
+//   3) «inici» del set.json                         (sense hora o mal escrita → 0: s'espera a «Empezar ahora»)
 const SID = SET.id || SET.nom;
+// Setlist editada en aquest mòbil: {txt, at (quan), base (empremta del fitxer d'aleshores)}. null = la del fitxer.
+const norm = s => String(s).replace(/\r\n?/g, '\n');
+const hash = s => { let h = 5381; for (let k = 0; k < s.length; k++) h = (h * 33 ^ s.charCodeAt(k)) >>> 0; return h.toString(36); };
+const H0 = hash(SET.txt);
+const EDK = 'um.txt.' + SID;
+const edited = {
+  get() { try { const o = JSON.parse(localStorage.getItem(EDK)); return o && typeof o.txt === 'string' ? o : null; } catch { return null; } },
+  set(o) { try { o ? localStorage.setItem(EDK, JSON.stringify(o)) : localStorage.removeItem(EDK); return true; } catch { return false; } }
+};
+const curTxt = () => edited.get()?.txt ?? SET.txt;
 const mem = k => ({ get(){ try { return +localStorage.getItem(k) || 0; } catch { return 0; } }, set(v){ try { v ? localStorage.setItem(k, v) : localStorage.removeItem(k); } catch {} } });
 const store = mem('um.start.' + SID);
 const plan = mem('um.plan.' + SID);
 const filePlanned = (SET.inici && Date.parse(SET.inici)) || 0;
 const planned = () => plan.get() || filePlanned;
 const startAt = () => store.get() || planned();
-// Segons d'avís abans del canvi de tema: número en color + requadre que batega (+ vibració on el mòbil ho permet; l'iPhone no). 0 = sense avís. Es tria a «Ajustes».
-const AVISOS = [0, 10, 15, 20, 30];
-let AVISO = (() => { try { const v = localStorage.getItem('um.aviso'); return v !== null && AVISOS.includes(+v) ? +v : 15; } catch { return 15; } })();
-// Segons abans d'un canvi de part en què el requadre del tema ho anuncia («Cambio a Parte 3 en 0:45»)
-const AVISO_PARTE = 60;
+// Avisos (segons abans del canvi, per tipus): mira «==== Avisos ====» més avall
 
 const $ = id => document.getElementById(id);
 const fmt = s => { s = Math.max(0, Math.round(s)); const h = Math.floor(s/3600), m = Math.floor(s%3600/60), x = s%60; return (h ? h + ':' + String(m).padStart(2,'0') : m) + ':' + String(x).padStart(2,'0'); };
 const hhmm = d => d.toLocaleTimeString('es-ES', { hour:'2-digit', minute:'2-digit' });
-const fecha = d => { const w = d.toLocaleDateString('es-ES', { weekday:'long' }), m = d.toLocaleDateString('es-ES', { month:'short' }).replace('.', ''); return w[0].toUpperCase() + w.slice(1) + ' ' + d.getDate() + ' ' + m + ' · ' + hhmm(d) + ' h'; };
 const hms = d => d.toLocaleTimeString('es-ES', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
-const fechaS = d => fecha(d).replace(/\d\d:\d\d h$/, hms(d) + ' h');   // amb segons
+const wday = d => d.toLocaleDateString('es-ES', { weekday:'short' }).replace('.', '');
+const dia = d => wday(d) + ' ' + d.getDate() + ' ' + d.toLocaleDateString('es-ES', { month:'short' }).replace('.', '');
+const fecha = d => dia(d) + ' · ' + hhmm(d);     // «dom 1 nov · 00:00»
+const fechaS = d => dia(d) + ' · ' + hms(d);     // amb segons
+const pad2 = n => String(n).padStart(2, '0');
+const dmy = d => pad2(d.getDate()) + '.' + pad2(d.getMonth() + 1) + '.' + d.getFullYear();   // «01.11.2026», com als cartells
 const fmtOff = ms => (ms < 0 ? '−' : '+') + fmt(Math.abs(ms) / 1000);
+// Desfase del set respecte a la hora prevista, en el mateix sentit que els botons (−10 s = el set va 10 s enrere)
+const offTxt = () => fmtOff(planned() - store.get());
 const esc = s => s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
 const mark = x => x.dm ? `<b class="mk">${x.dm}</b>` : '';
 const name = x => mark(x) + esc(x.dt);
 const setText = (el, s) => { if (el && el.textContent !== s) el.textContent = s; };
 const LOGO = '<svg class="hero" role="img" aria-label="Universo Makina"><use href="#um-full"/></svg>';
+// Pantalles d'abans/després = el cartell: dia i hora a l'esquerra, lloc i ciutat a la dreta, logo i nom del set
+function poster(t0) {
+  const ll = String(SET.lloc || '').split(' · '), city = ll.length > 1 ? ll.pop() : ll[0] || '', venue = ll.length && city !== ll[0] ? ll.join(' · ') : '';
+  const L = t0 ? `<span><small>${esc(wday(new Date(t0)))} ● ${hhmm(new Date(t0))} a ${hhmm(new Date(t0 + TOTAL*1000))}</small><b>${dmy(new Date(t0))}</b></span>` : '';
+  const Rr = city ? `<span class="r"><small>${esc(venue)}</small><b>${esc(city)}</b></span>` : '';
+  return (L || Rr ? `<div class="ph2">${L}${Rr}</div>` : '') + LOGO + `<div class="snom">${esc(SET.nom || 'Universo Makina')}</div>`;
+}
 const RM = matchMedia('(prefers-reduced-motion: reduce)');
 const how = () => RM.matches ? 'auto' : 'smooth';
 
 $('nom').textContent = SET.nom || 'Universo Makina';
 $('lloc').textContent = SET.lloc || '';
-$('bar').innerHTML = parts.map(p => `<i style="width:${(p.b-p.a)/TOTAL*100}%;--c:${p.c}"></i>`).join('');
-const barI = [...$('bar').children];
-$('list').innerHTML = parts.map(p => `<div class="part-h" style="--c:${p.c}"><span class="pn">${esc(pname(p))}</span><span class="pm"><span>${p.n} temas</span><span>${fmt(p.a)} – ${fmt(p.b)}</span></span></div><ol>` +
-  tracks.filter(x => x.p === p).map(x => `<li style="--c:${p.c}" data-i="${tracks.indexOf(x)}"><span class="n">${x.i}</span><span class="t">${fmt(x.a)}</span><span>${name(x)}</span></li>`).join('') + '</ol>').join('');
-const lis = [...document.querySelectorAll('li[data-i]')];
+let barI = [], lis = [];
+// (Re)carrega el setlist: dades + barra de parts + llista + dades del set. El tic següent recalcula el tema que sona (per temps del set).
+function load(txt) {
+  ({ parts, tracks } = parseSet(txt));
+  TOTAL = tracks.length ? tracks.at(-1).b : 0;
+  tracks.forEach(x => Object.assign(x, shown(x.t, x.mk)));
+  $('bar').innerHTML = parts.map(p => `<i style="width:${(p.b-p.a)/(TOTAL||1)*100}%;--c:${p.c}"></i>`).join('');
+  barI = [...$('bar').children];
+  $('list').innerHTML = parts.map(p => `<div class="part-h" style="--c:${p.c}"><span class="pn">${esc(pname(p))}</span><span class="pm"><span>${plural(p.n, 'tema', 'temas')}</span><b>${fmt(p.a)}–${fmt(p.b)}</b></span></div><ol>` +
+    tracks.filter(x => x.p === p).map(x => `<li style="--c:${p.c}" data-i="${tracks.indexOf(x)}"><span class="n">${x.i}</span><span class="t">${fmt(x.a)}</span><span>${name(x)}</span><button type="button" class="bl" aria-pressed="false" aria-label="Avisarme de: ${esc((x.dm ? x.dm + ' ' : '') + x.dt)}">${BELL}</button></li>`).join('') + '</ol>').join('');
+  lis = [...document.querySelectorAll('li[data-i]')];
+  qeAttrs();
+  matchStars(); avParts(); avSync();
+  $('info').innerHTML = `<b>${esc(SET.nom || 'Universo Makina')}</b>` + [SET.lloc, `${plural(tracks.length, 'tema', 'temas')} · ${plural(parts.length, 'parte', 'partes')} · ${fmt(TOTAL)}`,
+    'Archivo: ' + (filePlanned ? fechaS(new Date(filePlanned)) : 'sin hora')].filter(Boolean).map(t => `<span>${esc(t)}</span>`).join('');
+  setText($('slInfo'), `${plural(tracks.length, 'tema', 'temas')} · ${plural(parts.length, 'parte', 'partes')}`);
+  badges();
+  last = -3;
+}
 
 // Barra de parts: cada part plena fins on som + un capçal a la posició actual
 function paintBar(el) {
@@ -455,7 +703,7 @@ function paintBar(el) {
   if (k >= 0) { const b = barI[k], p = parts[k]; ph.style.left = (b.offsetLeft + b.offsetWidth * (el-p.a)/(p.b-p.a)) + 'px'; }
 }
 
-let last = -2, buzzed = -1, said = -1, booted = false, flash = false;
+let last = -2, said = -1, booted = false, flash = false;
 // Tot es calcula de nou a cada tic a partir de Date.now(): si el mòbil s'adorm o el navegador frena el temporitzador, en tornar torna a ser exacte.
 function tick() {
   const now = Date.now(), t0 = startAt(), main = $('main');
@@ -466,91 +714,109 @@ function tick() {
   document.body.classList.toggle('live', live);
   $('bMinus').disabled = $('bPlus').disabled = !t0;
   $('bReset').disabled = $('aReset').disabled = !store.get();
-  setText($('bResetS'), plan.get() ? 'hora puesta' : 'hora del set');
   syncNote();
   ajustes(live);
   if (!live) disarm();
 
-  if (!t0) {   // set sense «inici» i encara sense «Empieza ahora»
+  if (!t0) {   // set sense «inici» i encara sense «Empezar ahora»
     document.documentElement.style.removeProperty('--part');
-    setText($('done'), ''); setText($('rest'), fmt(TOTAL) + ' en total');
+    setText($('done'), ''); setText($('rest'), fmt(TOTAL));
     paintBar(-1);
     if (last !== -4) {
-      main.innerHTML = `<section class="state">${LOGO}<div class="k">Sin hora de inicio</div><div class="big txt">En espera</div><p>pulsa ▶ Empieza ahora cuando arranque el set, o pon fecha y hora en Ajustes · ${tracks.length} temas · ${fmt(TOTAL)}</p></section>`;
+      main.innerHTML = `<section class="state fr">${poster(0)}<div class="k">Sin hora de inicio</div><p>${plural(tracks.length, 'tema', 'temas')} · ${fmt(TOTAL)}</p></section>`;
       list(-1, 0);
       last = -4;
     }
-    strip('En espera', 'Sin hora de inicio', '');
+    strip('Sin hora de inicio', `${plural(tracks.length, 'tema', 'temas')} · ${fmt(TOTAL)}`, '');
   } else {
-    setText($('done'), el > 0 && el < TOTAL ? fmt(el) + ' de set' : '');
-    setText($('rest'), el > 0 && el < TOTAL ? 'quedan ' + fmt(TOTAL - el) : fmt(TOTAL) + ' en total');
+    setText($('done'), el > 0 && el < TOTAL ? fmt(el) : '');
+    setText($('rest'), el > 0 && el < TOTAL ? '−' + fmt(TOTAL - el) : fmt(TOTAL));
     paintBar(el);
     if (el < 0) {
       document.documentElement.style.removeProperty('--part');
       if (last !== -5) {
-        main.innerHTML = `<section class="state">${LOGO}<div class="k">Empieza en</div><div class="big" id="big"></div><p>${fecha(new Date(t0))} · ${tracks.length} temas · ${fmt(TOTAL)}</p></section>`;
+        main.innerHTML = `<section class="state fr">${poster(t0)}<div class="k">Empieza en</div><div class="big" id="big"></div><p>${plural(tracks.length, 'tema', 'temas')} · ${fmt(TOTAL)}</p></section>`;
         list(-1, el); last = -5;
       }
       const c = fmt(-el);
       setText($('big'), c); $('big').classList.toggle('l', c.length > 7);
       strip('Empieza en', fecha(new Date(t0)), c);
-    } else if (i < 0) {
-      document.documentElement.style.removeProperty('--part');
-      if (last !== -6) {
-        main.innerHTML = `<section class="state">${LOGO}<div class="k">Fin del set</div><div class="big txt">Set terminado</div><p>${tracks.length} temas · ${fmt(TOTAL)} · acabó a las ${hhmm(new Date(t0 + TOTAL*1000))}</p></section>`;
-        list(-1, el); last = -6;
-      }
-      strip('Fin del set', 'Set terminado', '');
     } else {
-      const x = tracks[i], nx = tracks[i+1];
-      document.documentElement.style.setProperty('--part', x.p.c);
-      if (i !== last) {
-        const len = x.dt.length + (x.dm ? 3 : 0), nexts = tracks.slice(i+1, i+4);
-        let pp = x.p, rows = '';
-        nexts.forEach((n, k) => {
-          // canvi de part dins «A continuación»: separador del color de la part nova
-          if (n.p !== pp) { rows += `<li class="pdiv" style="--c:${n.p.c}"><span><b>▲</b> ${esc(pname(n.p))}</span><span data-at="${n.a}"></span></li>`; pp = n.p; }
-          rows += `<li class="${k ? '' : 'n1'}" style="--c:${n.p.c}"><span class="t" data-at="${n.a}"></span><span>${name(n)}</span></li>`;
-        });
-        main.innerHTML = `<section class="now"><svg class="now-tri" aria-hidden="true"><use href="#um-tri"/></svg>
-          <div class="now-h"><span class="ptag">${esc(pname(x.p))}</span><span class="pos">${x.i}<i>/${x.p.n}</i></span></div>
-          <div class="title${len > 80 ? ' xxlong' : len > 60 ? ' xlong' : len > 38 ? ' long' : ''}">${mark(x)}${esc(x.dt).replace(/[^\s–]*\w-\w[^\s–]*/g, w => `<span class="nw">${w}</span>`)}</div>
-          <div class="cd"><div class="left" id="left"></div><div class="lbl">${nx ? 'para el<br>siguiente' : 'para el<br>final'}</div></div>
-          ${nx && nx.p !== x.p ? `<div class="chg" id="chg" style="--c:${nx.p.c}" hidden></div>` : ''}
-          <div class="tbar"><i id="tb"></i></div>
-          <div class="tfoot"><span id="tin"></span><span>${fmt(x.b - x.a)}</span></div></section>` +
-          (nexts.length ? `<h2 class="sec">A continuación</h2><ol class="next">${rows}</ol>`
-                        : `<div class="endnote"><b>▲ Último tema</b><span>El set termina a las ${hhmm(new Date(t0 + TOTAL*1000))}</span></div>`);
-        list(i, el);
-        // lector de pantalla: només s'anuncia el canvi de tema (no cada segon)
-        if (i !== said) { if (booted) $('say').textContent = `Ahora: ${x.dm ? x.dm + ' ' : ''}${x.dt}. ${pname(x.p)}, ${x.i} de ${x.p.n}.`; said = i; }
-        last = i;
-      }
-      const left = x.b - el, soon = left <= AVISO;
-      setText($('left'), fmt(left));
-      $('left').classList.toggle('soon', soon);
-      main.querySelector('.now').classList.toggle('soon', soon);
-      // vibració un cop per tema, just en entrar a l'avís (només Android; cal haver tocat la pantalla abans)
-      if (soon && buzzed !== i && left > AVISO - 1.5 && navigator.userActivation?.hasBeenActive) navigator.vibrate?.(200);
-      if (soon) buzzed = i;
-      $('tb').style.width = ((el - x.a) / (x.b - x.a) * 100) + '%';
-      setText($('tin'), fmt(el - x.a));
-      const chg = $('chg');
-      if (chg) { chg.hidden = left > AVISO_PARTE; if (!chg.hidden) setText(chg, `Cambio a ${pname(nx.p)} en ${fmt(left)}`); }
-      main.querySelectorAll('[data-at]').forEach(e => setText(e, 'en ' + fmt(+e.dataset.at - el)));
-      strip(`Ahora · ${pname(x.p)} · ${x.i}/${x.p.n}`, (x.dm ? x.dm + ' ' : '') + x.dt, fmt(left), soon);
+      // n = el tema que ve: el següent del que sona, o (en una pausa entre temes) el primer que encara no ha començat
+      const n = i >= 0 ? (i + 1 < tracks.length ? i + 1 : -1) : tracks.findIndex(x => x.a > el);
+      if (i < 0 && n < 0) {   // només després de l'últim tema
+        document.documentElement.style.removeProperty('--part');
+        if (last !== -6) {
+          main.innerHTML = `<section class="state fr">${poster(t0)}<div class="band"><b>Fin del set</b><span>${plural(tracks.length, 'tema', 'temas')} · ${fmt(TOTAL)} · terminó a las ${hhmm(new Date(t0 + TOTAL*1000))}</span></div></section>`;
+          list(-1, el); last = -6;
+        }
+        strip('Fin del set', `Terminó a las ${hhmm(new Date(t0 + TOTAL*1000))}`, '');
+      } else playing(i, n, el, t0, main);
     }
   }
   if (flash) { flash = false; const f = main.firstElementChild; if (f) { f.classList.add('flash'); setTimeout(() => f.classList.remove('flash'), 800); } }
   booted = true;
 }
 
+// Tema que sona (i) o pausa entre temes (i = -1): requadre gran + «A continuación» + avisos
+function playing(i, n, el, t0, main) {
+  const x = tracks[i], nx = tracks[n], gap = !x, cur = x || nx;
+  const pe = gap ? (tracks[n - 1]?.b ?? 0) : 0;   // en una pausa: on va acabar el tema d'abans
+  const key = gap ? -100 - n : i;
+  document.documentElement.style.setProperty('--part', cur.p.c);
+  if (key !== last) {
+    const from = gap ? n : i + 1, nexts = tracks.slice(from, from + 3);
+    let pp = gap ? (tracks[n - 1] || nx).p : x.p, rows = '';
+    nexts.forEach((m, k) => {
+      // canvi de part dins «A continuación»: separador del color de la part nova
+      if (m.p !== pp) { rows += `<li class="pdiv" style="--c:${m.p.c}"><span>${esc(pname(m.p))}</span><span data-at="${m.a}"></span></li>`; pp = m.p; }
+      rows += `<li class="${k ? '' : 'n1'}" style="--c:${m.p.c}"><span class="t" data-at="${m.a}"></span><span>${name(m)}${bellI(from + k)}</span></li>`;
+    });
+    const len = gap ? 0 : x.dt.length + (x.dm ? 3 : 0);
+    const head = gap
+      ? `<div class="now-h"><span class="ptag">Pausa</span><span class="pos">${fmt(nx.a - pe)}</span></div>
+         <div class="title">Pausa</div><p class="gapn">Siguiente: ${name(nx)}</p>`
+      : `<div class="now-h"><span class="ptag">${esc(pname(x.p))}</span><span class="pos">${x.i}<i>/${x.p.n}</i></span></div>
+         <div class="title${len > 80 ? ' xxlong' : len > 60 ? ' xlong' : len > 38 ? ' long' : ''}">${mark(x)}${esc(x.dt).replace(/[^\s–]*\w-\w[^\s–]*/g, w => `<span class="nw">${w}</span>`)}</div>`;
+    const lbl = gap ? 'Siguiente' : !nx ? 'Final' : nx.a > x.b ? 'Pausa' : 'Siguiente';
+    main.innerHTML = `<section class="now fr${gap ? ' gap' : ''}">${head}
+      <div class="cd"><div class="left" id="left"></div><div class="lbl">${lbl}</div></div>
+      <div class="prog"><div class="tbar"><i id="tb"></i></div>
+      <div class="tfoot"><span id="tin"></span><span>${fmt(gap ? nx.a - pe : x.b - x.a)}</span></div>
+      <div class="al" id="al" hidden></div></div></section>` +
+      (nexts.length ? `<h2 class="sec">Siguientes</h2><ol class="next">${rows}</ol>`
+                    : `<div class="endnote"><b>Último tema</b><span>Fin a las ${hhmm(new Date(t0 + TOTAL*1000))}</span></div>`);
+    if (gap) list(-1, el, n); else list(i, el);
+    banKey = '';
+    // lector de pantalla: només s'anuncia el canvi de tema o la pausa (no cada segon)
+    if (key !== said) {
+      if (booted) setText($('say'), gap ? `Pausa. Siguiente: ${nx.dm ? nx.dm + ' ' : ''}${nx.dt}, en ${fmt(nx.a - el)}.` : `Ahora: ${x.dm ? x.dm + ' ' : ''}${x.dt}. ${pname(x.p)}, ${x.i} de ${x.p.n}.`);
+      said = key;
+    }
+    last = key;
+  }
+  const C = gap ? nx.a : x.b, left = C - el;
+  setText($('left'), fmt(left));
+  // Avisos: un sol latido i una sola franja, els més importants (fin > parte > marcado > marca > cada tema)
+  const A = alertsAt(el, x, n), pulse = A.find(a => a.pulse) || null, ban = A.find(a => a.ty !== 'tema') || null;
+  paintPulse(main.querySelector('.now'), pulse);
+  $('left').classList.toggle('soon', !!pulse);
+  paintBanner($('al'), ban);
+  fireNew(A);
+  const a0 = gap ? pe : x.a;
+  $('tb').style.width = ((el - a0) / (C - a0) * 100) + '%';
+  setText($('tin'), fmt(el - a0));
+  main.querySelectorAll('[data-at]').forEach(e => setText(e, fmt(+e.dataset.at - el)));
+  strip(ban ? bannerText(ban) : gap ? 'Pausa' : `${pname(x.p)} · ${x.i}/${x.p.n}`,
+        gap ? 'Siguiente: ' + (nx.dm ? nx.dm + ' ' : '') + nx.dt : (x.dm ? x.dm + ' ' : '') + x.dt, fmt(left), !!pulse);
+}
+
 // Setlist: passats / actual (aria-current). Només segueix el tema si l'estaves mirant (si no, la pàgina no salta lluny del tema actual)
-function list(i, el) {
+function list(i, el, n = -1) {
   // (només si és el pas natural al tema següent: després d'una sincronització no saltem)
-  const prev = document.querySelector('li.cur'), r = prev?.getBoundingClientRect(), watching = r && r.bottom > 0 && r.top < innerHeight && +prev.dataset.i === i - 1;
+  const prev = document.querySelector('li.cur'), r = prev?.getBoundingClientRect(), watching = r && r.bottom > 0 && r.top < $('tabbar').getBoundingClientRect().top && +prev.dataset.i === i - 1;
   lis.forEach((li, k) => {
-    li.className = k < i || (i < 0 && el >= TOTAL) ? 'past' : k === i ? 'cur' : '';
+    li.className = k < i || (i < 0 && (el >= TOTAL || k < n)) ? 'past' : k === i ? 'cur' : '';
     k === i ? li.setAttribute('aria-current', 'true') : li.removeAttribute('aria-current');
   });
   if (i >= 0 && watching) lis[i].scrollIntoView({ block: 'nearest', behavior: how() });
@@ -563,60 +829,65 @@ function strip(k, t, c, soon = false) {
 }
 
 // Text de sota els botons: quant s'ha mogut respecte a l'hora prevista (la posada al mòbil, si n'hi ha; si no, la del set)
+// Només surt si hi ha un ajust a mà (si no, la fila queda buida i no ocupa lloc)
 function syncNote() {
-  const s = store.get(), pl = planned(), what = plan.get() ? 'Hora puesta en el móvil' : 'Hora prevista del set';
-  const t = s && pl ? (Math.abs(s - pl) < 500 ? 'Sin desfase: coincide con la hora prevista' : `Desfase: ${fmtOff(s - pl)} sobre la hora prevista (empieza a las ${hms(new Date(s))})`)
-    : s ? 'Sincronizado a mano: empieza a las ' + hms(new Date(s))
-    : pl ? what + ': ' + fecha(new Date(pl)) : '';
+  const s = store.get(), pl = planned();
+  const t = s && pl ? (Math.abs(s - pl) < 500 ? 'A mano · sin desfase' : `Desfase ${offTxt()} · inicio ${hms(new Date(s))}`)
+    : s ? 'A mano · inicio ' + hms(new Date(s)) : '';
   setText($('sync'), t);
-  setText($('aSync'), s ? t : 'Sin ajuste a mano: manda la hora prevista.');
+  setText($('aSync'), t);
 }
 
 // «Ajustes»: d'on surt l'hora que mana ara
 function ajustes(live) {
   const s = store.get(), pl = planned();
-  setText($('srcT'), s ? (pl ? `Sincronizado a mano (${fmtOff(s - pl)})` : 'Sincronizado a mano') : plan.get() ? 'Hora puesta en el móvil' : filePlanned ? 'Hora del set (archivo)' : 'Sin hora de inicio');
-  setText($('srcD'), startAt() ? 'Empieza: ' + fechaS(new Date(startAt())) : 'Pon fecha y hora, o pulsa ▶ Empieza ahora');
+  setText($('srcT'), startAt() ? fechaS(new Date(startAt())) : 'Sin hora');
+  setText($('srcD'), s ? (pl ? `A mano (${offTxt()})` : 'A mano') : plan.get() ? 'Puesta en este móvil. Solo en este móvil.' : filePlanned ? 'Del archivo' : 'Pon fecha y hora, o Empezar ahora');
   $('bFile').hidden = !plan.get();
-  setText($('bFile'), filePlanned ? 'Volver a la hora del archivo' : 'Quitar la hora puesta');
-  if (!$('aStart').classList.contains('arm')) setText($('aStart'), live ? '↻ Reiniciar: empieza ahora' : '▶ Empieza ahora');
+  setText($('bFile'), filePlanned ? 'Usar la del archivo' : 'Quitar hora');
+  if (!$('aStart').classList.contains('arm')) setText($('aStart'), live ? 'Reiniciar ahora' : 'Empezar ahora');
 }
 
-// Cada acció de sincronització es pot desfer (6 s). Tocs seguits (p. ex. 3× «10 s») es desfan de cop.
-let undoV = null, toastT = 0;
-function sync(v, msg) {
-  if (undoV === null) undoV = store.get();
-  store.set(v); last = -3; flash = true; tick();
-  const s = store.get();
-  setText($('tMsg'), msg + (s && planned() ? ' · ' + fmtOff(s - planned()) : ''));
+// Avís «Deshacer» (6 s). Accions seguides del mateix tipus (p. ex. 3× «10 s», o diversos canvis al setlist) es desfan de cop: es guarda el primer «abans».
+let undoFn = null, undoKind = '', toastT = 0;
+function toast(msg, kind, undo) {
+  if (!undoFn || undoKind !== kind) { undoFn = undo; undoKind = kind; }
+  setText($('tMsg'), msg);
+  $('bUndo').hidden = !undoFn;
   $('toast').hidden = false;
   clearTimeout(toastT); toastT = setTimeout(closeToast, 6000);
 }
-function closeToast() { clearTimeout(toastT); $('toast').hidden = true; undoV = null; }
-$('bUndo').onclick = () => { if (undoV === null) return; store.set(undoV); closeToast(); last = -3; flash = true; tick(); };
+function closeToast() { clearTimeout(toastT); $('toast').hidden = true; undoFn = null; undoKind = ''; }
+$('bUndo').onclick = () => { const f = undoFn; if (!f) return; closeToast(); f(); };
+function sync(v, msg) {
+  const before = store.get();
+  store.set(v); last = -3; flash = true; tick();
+  const s = store.get();
+  toast(msg + (s && planned() ? ' · desfase ' + offTxt() : ''), 'sync', () => { store.set(before); last = -3; flash = true; tick(); });
+}
 
-$('bStart').onclick = () => sync(Date.now(), 'Set empezado ahora');
-$('bMinus').onclick = () => sync(startAt() + 10000, 'Retrasado 10 s');   // el set va 10 s per darrere: el compte enrere puja 10 s
-$('bPlus').onclick  = () => sync(startAt() - 10000, 'Adelantado 10 s');
-$('bReset').onclick = () => sync(0, 'Vuelta a la hora prevista');
-// «Reiniciar» (= Empieza ahora amb el set en marxa): cal tocar-lo dos cops en 3 s. També el botó gran d'«Ajustes» quan el set ja sona.
+$('bStart').onclick = () => sync(Date.now(), 'Empezado');
+$('bMinus').onclick = () => sync(startAt() + 10000, '−10 s');   // el set va 10 s per darrere: el compte enrere puja 10 s
+$('bPlus').onclick  = () => sync(startAt() - 10000, '+10 s');
+$('bReset').onclick = () => sync(0, 'Hora prevista');
+// «Reiniciar» (= Empezar ahora amb el set en marxa): cal tocar-lo dos cops en 3 s. També el botó gran d'«Ajustes» quan el set ja sona.
 const arms = [];
 function armable(b, idle, armed, need) {
   let t = 0, at = 0;
   const off = () => { if (!b.classList.contains('arm')) return; clearTimeout(t); b.classList.remove('arm'); b.innerHTML = idle(); };
   arms.push(off);
   b.onclick = () => {
-    if (!need()) return sync(Date.now(), 'Set empezado ahora');
+    if (!need()) return sync(Date.now(), 'Empezado');
     if (!b.classList.contains('arm')) { b.classList.add('arm'); b.innerHTML = armed; at = Date.now(); t = setTimeout(off, 3000); return; }
     if (Date.now() - at < 350) return;   // un doble toc sense voler no compta
-    off(); sync(Date.now(), 'Reiniciado: empieza ahora');
+    off(); sync(Date.now(), 'Reiniciado');
   };
 }
 const isLive = () => document.body.classList.contains('live');
 function disarm() { arms.forEach(f => f()); }
-armable($('bRestart'), () => 'Reiniciar<small>empieza ahora</small>', '¿Reiniciar?<small>toca otra vez</small>', () => true);
-armable($('aStart'), () => isLive() ? '↻ Reiniciar: empieza ahora' : '▶ Empieza ahora', '¿Reiniciar? Toca otra vez', isLive);
-$('aReset').onclick = () => sync(0, 'Vuelta a la hora prevista');
+armable($('bRestart'), () => 'Reiniciar', '¿Seguro?', () => true);
+armable($('aStart'), () => isLive() ? 'Reiniciar ahora' : 'Empezar ahora', '¿Seguro? Toca otra vez', isLive);
+$('aReset').onclick = () => sync(0, 'Hora prevista');
 
 // ---- Pestanyes (Ahora · Setlist · Ajustes). Es recorda l'última. ----
 const TABS = ['ahora', 'setlist', 'ajustes'];
@@ -632,6 +903,7 @@ function show(t) {
   if (t === 'setlist') toCur(again);                             // s'obre al tema que sona
   else scrollTo({ top: 0, behavior: again ? how() : 'auto' });   // tornar a tocar «Ahora» = amunt
   if (t === 'ajustes' && !again) { fillDT(); $('cfm').hidden = true; setText($('aMsg'), ''); }
+  if (!again) { hideCfms(); if (t !== 'setlist' && qe) setQE(false); }
 }
 $('tabbar').addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (b) show(b.dataset.tab); });
 $('strip').onclick = () => toCur(true);
@@ -653,7 +925,7 @@ let pending = null;
 function askOrSave(v, what) {
   if (store.get()) {
     pending = v;
-    setText($('cfmT'), `Tienes un ajuste a mano (${planned() ? fmtOff(store.get() - planned()) : 'Empieza ahora'}). Al guardar se quita y manda ${what}.`);
+    setText($('cfmT'), `Se quitará el ajuste a mano${planned() ? ` (${offTxt()})` : ''} y mandará ${what}.`);
     $('cfm').hidden = false; $('cfmYes').focus();
     return;
   }
@@ -664,34 +936,657 @@ function savePlan(v) {
   store.set(0); closeToast(); disarm();
   $('cfm').hidden = true; pending = null;
   last = -3; flash = true; tick(); fillDT();
-  setText($('aMsg'), planned() ? 'Guardado. Empieza: ' + fechaS(new Date(planned())) : 'Guardado: sin hora de inicio');
+  setText($('aMsg'), planned() ? 'Guardado · ' + fechaS(new Date(planned())) : 'Hora quitada');
 }
 $('bSave').onclick = () => {
   const v = readDT();
-  if (!v) { setText($('aMsg'), 'Pon la fecha y la hora.'); return; }
+  if (!v) { setText($('aMsg'), 'Falta fecha u hora.'); return; }
   askOrSave(v, 'la hora nueva');
 };
-$('bFile').onclick = () => askOrSave(0, filePlanned ? 'la hora del archivo' : 'Empieza ahora');
+$('bFile').onclick = () => askOrSave(0, filePlanned ? 'la hora del archivo' : 'Empezar ahora');
 $('cfmYes').onclick = () => { if (pending !== null) savePlan(pending); };
 $('cfmNo').onclick = () => { $('cfm').hidden = true; pending = null; };
 ['iDate', 'iTime'].forEach(k => $(k).addEventListener('input', () => { $('cfm').hidden = true; setText($('aMsg'), ''); }));
 
-// Avís: 0 / 10 / 15 / 20 / 30 s (es guarda al mòbil)
-$('seg').innerHTML = AVISOS.map(v => `<button type="button" data-v="${v}" aria-pressed="${v === AVISO}">${v}&nbsp;s</button>`).join('');
-$('seg').onclick = e => {
-  const b = e.target.closest('[data-v]'); if (!b) return;
-  AVISO = +b.dataset.v; try { localStorage.setItem('um.aviso', AVISO); } catch {}
-  $('seg').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b));
-  tick();
-};
+// ==== Avisos ====
+// Avisos dins de l'app (amb la pantalla encesa i l'app oberta). Amb el mòbil bloquejat caldria un servidor (push): no n'hi ha.
+// Tots els ajustos en una sola clau: um.avisos (l'antic «um.aviso», segons, passa a «Cada tema»). Temes amb campana, per set: um.star.<id>.
+const AVK = 'um.avisos', STK = 'um.star.' + SID;
+const LEADS = { tema: [5, 10, 15, 20, 30], parte: [30, 60, 120, 300], star: [10, 20, 30, 60], fin: [60, 300, 600] };
+const MFIL = [['all', 'Todas'], ['+', 'Solo +'], ['-', 'Solo −']];
+const AV_DEF = () => ({ on: true, tema: { on: true, s: 15 }, parte: { on: true, s: 60 }, star: { on: true, s: 30 }, marca: { on: false, f: 'all' }, fin: { on: true, s: 60 }, vib: true, son: false, mute: {} });
+const PRI = ['fin', 'parte', 'star', 'marca', 'tema'];   // si en coincideixen uns quants, mana el primer
+const PULSE = 30;   // el requadre només batega els últims 30 s (abans, només la franja)
+function saveAv(o) { try { localStorage.setItem(AVK, JSON.stringify(o)); } catch {} }
+function readAv() {
+  const d = AV_DEF(); let o = null;
+  try { o = JSON.parse(localStorage.getItem(AVK)); } catch {}
+  if (!o || typeof o !== 'object') {
+    try { const v = localStorage.getItem('um.aviso'); if (v !== null) { const n = +v; d.tema.on = n > 0; if (LEADS.tema.includes(n)) d.tema.s = n; saveAv(d); localStorage.removeItem('um.aviso'); } } catch {}
+    return d;
+  }
+  for (const k of ['on', 'vib', 'son']) if (typeof o[k] === 'boolean') d[k] = o[k];
+  for (const k of ['tema', 'parte', 'star', 'marca', 'fin']) {
+    const v = o[k]; if (!v || typeof v !== 'object') continue;
+    if (typeof v.on === 'boolean') d[k].on = v.on;
+    if (LEADS[k]?.includes(v.s)) d[k].s = v.s;
+    if (k === 'marca' && MFIL.some(f => f[0] === v.f)) d.marca.f = v.f;
+  }
+  if (o.mute && typeof o.mute === 'object' && !Array.isArray(o.mute)) d.mute = o.mute;
+  return d;
+}
+let AV = readAv();
 
-// Dades del set
-$('info').innerHTML = [['Set', SET.nom || 'Universo Makina'], ['Lugar', SET.lloc], ['Temas', tracks.length + ' en ' + parts.length + ' partes'], ['Duración', fmt(TOTAL)],
-  ['Hora del archivo', filePlanned ? fechaS(new Date(filePlanned)) : 'sin hora']].filter(r => r[1]).map(r => `<dt>${r[0]}</dt><dd>${esc(String(r[1]))}</dd>`).join('');
+// Parts silenciades («Cada tema» i «Marcas» no avisen dins d'aquella part). Clau de la part: el seu nom.
+const pkey = (p, k) => pname(p).trim().toLowerCase() || '#' + k;
+const muted = p => (AV.mute[SID] || []).includes(pkey(p, parts.indexOf(p)));
+
+// ---- Temes amb campana ----
+// Identitat d'un tema: part + títol (sense la marca) + quina vegada surt aquell títol a la part. Així aguanta canvis d'hores,
+// de marca o de les altres línies. Si no el troba igual: mateix títol a la mateixa part → mateix títol a qualsevol part.
+const tkey = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
+let stars = (() => { try { const a = JSON.parse(localStorage.getItem(STK)); return Array.isArray(a) ? a.filter(s => s && typeof s.t === 'string' && typeof s.p === 'string') : []; } catch { return []; } })();
+let starI = new Set();
+function saveStars() { try { stars.length ? localStorage.setItem(STK, JSON.stringify(stars)) : localStorage.removeItem(STK); } catch {} }
+function idents() {
+  const cnt = new Map();
+  return tracks.map(x => { const p = pkey(x.p, parts.indexOf(x.p)), t = tkey(x.dt), c = p + '|' + t, o = (cnt.get(c) || 0) + 1; cnt.set(c, o); return { p, t, o }; });
+}
+const sameId = (a, b) => a.p === b.p && a.t === b.t && a.o === b.o;
+function resolve(s, ids) {
+  let k = ids.findIndex(d => sameId(d, s));
+  if (k < 0) k = ids.findIndex(d => d.p === s.p && d.t === s.t);
+  if (k < 0) k = ids.findIndex(d => d.t === s.t);
+  return k;
+}
+function matchStars() { const ids = idents(); starI = new Set(stars.map(s => resolve(s, ids)).filter(k => k >= 0)); }
+function paintStars() {
+  lis.forEach(li => { const on = starI.has(+li.dataset.i); li.toggleAttribute('data-star', on); li.querySelector('.bl')?.setAttribute('aria-pressed', on); });
+  const n = starI.size;
+  if ($('avStarN')) setText($('avStarN'), n ? `${plural(n, 'tema', 'temas')} con campana.` : 'Toca la campana de un tema en Setlist.');
+}
+// old: identitat d'abans d'editar el títol (per no deixar-la penjada)
+function setStar(k, on, old) {
+  const ids = idents(); if (!ids[k]) return;
+  stars = stars.filter(s => resolve(s, ids) !== k && !(old && sameId(s, old)));
+  if (on) stars.push(ids[k]);
+  saveStars(); matchStars(); paintStars(); last = -3;
+}
+const bellI = k => starI.has(k) ? '<svg class="bi" role="img" aria-label="(con aviso)"><use href="#um-bell"/></svg>' : '';
+const BELL = '<svg aria-hidden="true"><use href="#um-bell"/></svg>';
+
+// ---- Què toca avisar ara ----
+// el: segons del set · x: el tema que sona (o res, en una pausa) · n: índex del tema que ve (-1 = no n'hi ha més)
+function alertsAt(el, x, n) {
+  const A = [];
+  if (!AV.on) return A;
+  const nx = tracks[n], cur = x || nx, rout = !muted(cur.p), C = x ? x.b : nx.a, lim = s => Math.min(s, PULSE);
+  if (AV.fin.on) { const d = TOTAL - el; if (d > 0 && d <= AV.fin.s) A.push({ ty: 'fin', at: TOTAL, d, pulse: !nx && d <= lim(AV.fin.s) }); }
+  if (nx) {
+    if (AV.parte.on) for (let k = n; k < tracks.length; k++) {
+      const d = tracks[k].a - el; if (d > AV.parte.s) break;
+      if (k && tracks[k].p !== tracks[k - 1].p) { A.push({ ty: 'parte', at: tracks[k].a, d, p: tracks[k].p, pulse: k === n && d <= lim(AV.parte.s) }); break; }
+    }
+    if (AV.star.on) for (let k = n; k < tracks.length; k++) {
+      const d = tracks[k].a - el; if (d > AV.star.s) break;
+      if (starI.has(k)) { A.push({ ty: 'star', at: tracks[k].a, d, x: tracks[k], now: k === n, pulse: k === n && d <= lim(AV.star.s) }); break; }
+    }
+    const f = AV.marca.f, d = nx.a - el;
+    if (AV.marca.on && rout && nx.dm && (f === 'all' || nx.dm[0] === f) && d > 0 && d <= AV.tema.s) A.push({ ty: 'marca', at: nx.a, d, x: nx, pulse: true });
+  }
+  if (AV.tema.on && rout) { const d = C - el; if (d > 0 && d <= AV.tema.s) A.push({ ty: 'tema', at: C, d, pulse: true }); }
+  return A;
+}
+const mkS = m => m.replace('-', '−');
+function bannerText(a) {
+  return a.ty === 'fin' ? `Fin del set en ${fmt(a.d)}`
+    : a.ty === 'parte' ? `Cambio a ${pname(a.p)} en ${fmt(a.d)}`
+    : a.ty === 'star' ? `${a.now ? 'Ahora viene' : 'Viene'}: ${(a.x.dm ? a.x.dm + ' ' : '') + a.x.dt} en ${fmt(a.d)}`
+    : a.ty === 'marca' ? `Viene ${mkS(a.x.dm)}: ${a.x.dt} en ${fmt(a.d)}` : '';
+}
+function bannerHTML(a) {
+  const tt = a.x ? esc(a.x.dt) : '';
+  const h = a.ty === 'fin' ? '<b>Fin del set</b>'
+    : a.ty === 'parte' ? `<b>Cambio a ${esc(pname(a.p))}</b>`
+    : a.ty === 'star' ? `<b>${BELL}${a.now ? 'Ahora viene' : 'Viene'}</b><span class="alx">${a.x.dm ? esc(mkS(a.x.dm)) + ' ' : ''}${tt}</span>`
+    : `<b>Viene ${esc(mkS(a.x.dm))}</b><span class="alx">${tt}</span>`;
+  return `<span class="alt">${h}</span><span class="ald">${fmt(a.d)}</span>`;
+}
+let banKey = '';
+function paintBanner(el, a, pv) {
+  if (!el) return;
+  const k = a ? a.ty + ':' + a.at : '';
+  el.hidden = !a;
+  if (!a) { banKey = pv ? banKey : ''; return; }
+  if (pv || k !== banKey) {
+    el.className = 'al al-' + a.ty;
+    el.style.setProperty('--c', a.ty === 'parte' ? a.p.c : a.x ? a.x.p.c : 'var(--orange)');
+    el.innerHTML = bannerHTML(a);
+    if (!pv) banKey = k;
+  } else setText(el.lastElementChild, fmt(a.d));
+}
+function paintPulse(card, a) {
+  if (!card) return;
+  card.classList.toggle('soon', !!a);
+  PRI.forEach(t => card.classList.toggle('p-' + t, a?.ty === t));
+  if (a?.ty === 'parte') card.style.setProperty('--nc', a.p.c); else card.style.removeProperty('--nc');
+}
+
+// ---- Vibració i so (un cop per avís, en començar) ----
+const VIB = { tema: 200, marca: [120, 80, 120], star: [80, 60, 80, 60, 220], parte: [300, 120, 300], fin: [700] };
+const SND = { tema: [[880, .12]], marca: [[880, .1], [1175, .12]], star: [[1319, .09], [1319, .09], [1760, .18]], parte: [[659, .14], [880, .14], [1175, .22]], fin: [[440, .6]] };
+let AC = null;
+// Safari només deixa sonar després d'un toc: el primer toc a la pantalla (amb «Sonido» encès) desbloqueja l'àudio
+function unlockAudio() {
+  try {
+    if (!AC) { const K = window.AudioContext || window.webkitAudioContext; if (!K) return; AC = new K(); AC.onstatechange = sonNote; }
+    if (AC.state !== 'running') {
+      AC.resume().then(sonNote, () => {});
+      const s = AC.createBufferSource(); s.buffer = AC.createBuffer(1, 1, 22050); s.connect(AC.destination); s.start(0);
+    }
+  } catch {}
+}
+function beep(ty) {
+  if (!AC || AC.state !== 'running') return false;
+  let t = AC.currentTime + .03;
+  for (const [f, dur] of SND[ty]) {
+    const o = AC.createOscillator(), g = AC.createGain();
+    o.type = 'sine'; o.frequency.value = f;
+    g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.4, t + .012); g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+    o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t + dur + .03);
+    t += dur + .07;
+  }
+  return true;
+}
+['click', 'touchend', 'keydown'].forEach(ev => addEventListener(ev, () => { if (AV.son) unlockAudio(); }, { passive: true, capture: true }));
+function fire(ty, msg) {
+  if (AV.vib && navigator.userActivation?.hasBeenActive) try { navigator.vibrate?.(VIB[ty]); } catch {}
+  if (AV.son) beep(ty);
+  if (msg) setText($('say'), msg);
+}
+// Cada avís (tipus + moment) sona/vibra un sol cop; si n'entren uns quants alhora, només el més important
+const fired = new Set();
+function fireNew(A) {
+  let top = null;
+  for (const a of A) { const k = a.ty + ':' + a.at; if (!fired.has(k)) { fired.add(k); top = top || a; } }
+  if (top && booted) fire(top.ty, top.ty === 'tema' ? '' : 'Aviso: ' + bannerText(top));
+}
+
+// ---- Ajustes → Avisos ----
+const AVT = [
+  ['tema', 'Cada tema', ''],
+  ['parte', 'Cambio de parte', ''],
+  ['star', 'Temas con campana', ''],
+  ['marca', 'Marcas + / −', 'Avisa con los segundos de «Cada tema».'],
+  ['fin', 'Fin del set', ''],
+];
+const leadS = s => s < 60 ? s + '&nbsp;s' : s / 60 + '&nbsp;min';
+const swB = (k, title, sub, cls = '') => `<button type="button" class="sw${cls}" role="switch" aria-checked="false" data-sw="${k}"><span><b>${title}</b>${sub ? `<small>${sub}</small>` : ''}</span><i></i></button>`;
+function avUI() {
+  const segs = (t, opts, lbl) => `<div class="seg" role="group" aria-label="${lbl}" style="grid-template-columns:repeat(${opts.length},1fr)">${opts.map(([v, l]) => `<button type="button" data-t="${t}" data-v="${v}" aria-pressed="false">${l}</button>`).join('')}</div>`;
+  $('av').innerHTML = swB('on', 'Activados', 'Con la app abierta y la pantalla encendida.', ' main') +
+    `<p class="hint" id="avOff" hidden>Sin avisos.</p><div id="avBody" class="avt" style="gap:14px">` +
+    AVT.map(([t, title, sub]) => `<div class="avt">${swB(t, title, sub)}` +
+      (t === 'marca' ? segs(t, MFIL, 'Qué marcas') : segs(t, LEADS[t].map(v => [v, leadS(v)]), 'Antelación: ' + title)) +
+      (t === 'star' ? '<p class="hint" id="avStarN"></p>' : '') + '</div>').join('') +
+    `<h3>Por parte</h3><p class="hint">Apagar una parte silencia «Cada tema» y «Marcas» en ella.</p><div class="avp" id="avParts"></div>` +
+    `<h3>Cómo avisa</h3>` + swB('vib', 'Vibración', 'En iPhone no vibra (Safari no lo deja).') +
+    swB('son', 'Sonido', '') + `<p class="hint" id="sonSt"></p>` +
+    `<button type="button" id="avTest">Probar aviso</button>
+     <div class="now pv" id="pv" hidden aria-hidden="true"><div class="now-h"><span class="ptag" id="pvH"></span></div>
+       <div class="cd"><div class="left" id="pvL"></div><div class="lbl">Siguiente</div></div>
+       <div class="prog"><div class="tbar"><i style="width:82%"></i></div><div class="tfoot"><span>1:22</span><span>1:40</span></div><div class="al" id="pvA" hidden></div></div></div>
+     </div>`;
+}
+function avParts() {
+  if (!$('avParts')) return;
+  $('avParts').innerHTML = parts.map((p, k) => `<button type="button" class="sw" role="switch" aria-checked="${!muted(p)}" data-pk="${esc(pkey(p, k))}"><span class="pchip" style="--c:${p.c}"></span><span><b>${esc(pname(p) || 'Parte ' + (k + 1))}</b><small>${plural(p.n, 'tema', 'temas')} · ${fmt(p.a)}–${fmt(p.b)}</small></span><i></i></button>`).join('');
+}
+function sonNote() {
+  setText($('sonSt'), !AV.son ? '' : AC?.state === 'running' ? 'Listo. En silencio puede no sonar.' : 'Toca la pantalla para activarlo.');
+}
+function avSync() {
+  const box = $('av');
+  box.querySelectorAll('[data-sw]').forEach(b => { const k = b.dataset.sw; b.setAttribute('aria-checked', typeof AV[k] === 'boolean' ? AV[k] : AV[k].on); });
+  box.querySelectorAll('[data-v]').forEach(b => { const t = b.dataset.t; b.setAttribute('aria-pressed', t === 'marca' ? AV.marca.f === b.dataset.v : AV[t].s === +b.dataset.v); b.disabled = !AV[t].on; });
+  box.querySelectorAll('[data-pk]').forEach(b => b.setAttribute('aria-checked', !(AV.mute[SID] || []).includes(b.dataset.pk)));
+  $('avBody').hidden = !AV.on; $('avOff').hidden = AV.on;
+  sonNote(); paintStars();
+}
+avUI();
+$('av').addEventListener('click', e => {
+  const s = e.target.closest('[data-sw]'), b = e.target.closest('[data-v]'), pk = e.target.closest('[data-pk]');
+  if (s) {
+    const k = s.dataset.sw;
+    if (typeof AV[k] === 'boolean') AV[k] = !AV[k]; else AV[k].on = !AV[k].on;
+    if (k === 'son' && AV.son) { unlockAudio(); setTimeout(() => beep('tema'), 60); }
+    if (k === 'on' && !AV.on) stopPv();
+  } else if (b) { const t = b.dataset.t; if (t === 'marca') AV.marca.f = b.dataset.v; else AV[t].s = +b.dataset.v; }
+  else if (pk) {
+    const m = new Set(AV.mute[SID] || []), v = pk.dataset.pk;
+    m.has(v) ? m.delete(v) : m.add(v);
+    if (m.size) AV.mute[SID] = [...m]; else delete AV.mute[SID];
+  } else return;
+  saveAv(AV); avSync(); tick();
+});
+// «Probar aviso»: ensenya un rere l'altre com avisa cada tipus (latido + franja + so/vibració si estan encesos)
+let pvT = 0, pvK = -1;
+function stopPv() { clearTimeout(pvT); pvK = -1; $('pv').hidden = true; setText($('avTest'), 'Probar aviso'); }
+function stepPv() {
+  if (pvK >= PRI.length) return stopPv();
+  const ty = [...PRI].reverse()[pvK++], np = parts[1] || parts[0], ex = tracks.find((x, k) => starI.has(k)) || tracks.find(x => x.dm) || tracks[0];
+  const a = { ty, at: 0, d: 12, p: np, now: true, pulse: true, x: ty === 'marca' ? { ...ex, dm: ex.dm || '+1' } : ex };
+  const lbl = AVT.find(t => t[0] === ty)[1];
+  setText($('pvH'), lbl); setText($('pvL'), fmt(a.d));
+  paintPulse($('pv'), a);
+  $('pvL').classList.add('soon');
+  paintBanner($('pvA'), ty === 'tema' ? null : a, true);
+  fire(ty, 'Prueba: ' + lbl);
+  pvT = setTimeout(stepPv, 2200);
+}
+$('avTest').onclick = () => {
+  if (AV.son) unlockAudio();
+  if (pvK >= 0) return stopPv();
+  pvK = 0; $('pv').hidden = false; setText($('avTest'), 'Parar prueba'); stepPv();
+  $('pv').scrollIntoView({ block: 'nearest', behavior: how() });
+};
+avSync();
+
 // Versió: la de la memòria offline (service worker), si n'hi ha
 const ver = () => window.caches?.keys().then(ks => { const k = ks.find(x => x.startsWith('um-') && x !== 'um-fonts'); if (k) setText($('ver'), k.slice(3)); }).catch(() => {});
 ver(); setTimeout(ver, 4000);   // la primera vegada la memòria encara s'està omplint
 
+// ==== Editor del setlist ====
+// Una sola font de veritat: el TEXT (mateix format que el fitxer). L'editor de text i l'edició ràpida el reescriuen i es torna a carregar amb parseSet.
+// Es guarda només en aquest mòbil (um.txt.<id>); l'original del fitxer (SET.txt) sempre es pot recuperar.
+const T6 = s => { s = Math.max(0, Math.round(s)); return [Math.floor(s/3600), Math.floor(s%3600/60), s%60].map(pad).join(':'); };
+const TL = new RegExp(`^(\\s*)(${TM})(?:(\\s*[-–]\\s*)(${TM}))?(\\s+.+)$`);
+const cut = (s, n = 70) => s.length > n ? s.slice(0, n - 1) + '…' : s;
+const plural = (n, a, b) => n + ' ' + (n === 1 ? a : b);
+// «1:23:20», «23:20», «1.23.20», «12320» (sense separadors = h mm ss) → segons; null si no es pot llegir
+function parseT(v) {
+  v = String(v).trim().replace(/[.,'h ]+/g, ':').replace(/^:+|:+$/g, '');
+  if (!v) return null;
+  let p;
+  if (v.includes(':')) p = v.split(':');
+  else if (/^\d{1,6}$/.test(v)) { const d = v.padStart(6, '0'); p = [d.slice(0, 2), d.slice(2, 4), d.slice(4)]; }
+  else return null;
+  if (p.length > 3 || p.some(x => !/^\d{1,2}$/.test(x))) return null;
+  p = p.map(Number);
+  if (p.slice(1).some(x => x > 59)) return null;
+  return p.reduce((a, x) => a * 60 + x, 0);
+}
+
+// Les línies del text que són temes, amb el mateix criteri que parseSet (k-èsima línia de tema = tracks[k])
+function scan(txt) {
+  const lines = norm(txt).split('\n'), tr = [];
+  let part = -1, open = false;
+  lines.forEach((raw, ln) => {
+    const l = raw.trim();
+    if (!l) return;
+    if (l.startsWith('#')) { part++; open = true; return; }
+    if (/^\[(\w+)\]$/.test(l)) return;
+    const m = l.match(LINE);
+    if (!m) return;
+    if (!open) { part++; open = true; }
+    const rest = m[3], nm = rest.match(/^(\d+)\.\s*/);
+    let t = nm ? rest.slice(nm[0].length) : rest;
+    const mk = t.match(/^([+-]\d)\s+/);
+    if (mk) t = t.slice(mk[0].length);
+    tr.push({ ln, raw, a: secs(m[1]), b: m[2] ? secs(m[2]) : null, part, num: nm ? nm[1] : null, rest, ...shown(t, mk ? mk[1] : '') });
+  });
+  return { lines, tr };
+}
+// Canvia només les hores d'una línia (la resta queda igual)
+function retime(raw, a, b) {
+  const m = raw.match(TL); if (!m) return raw;
+  return m[1] + T6(a) + (b == null ? '' : (m[3] || '-') + T6(b)) + m[5];
+}
+// Torna a escriure una línia de tema (si el títol i la marca no canvien, el text del darrere queda tal qual)
+function trackLine(x, a, b, title, mk) {
+  const rest = title === x.dt && mk === x.dm ? x.rest : (x.num != null ? x.num + '. ' : '') + (mk ? mk + ' ' : '') + title;
+  return T6(a) + (b == null ? '' : '-' + T6(b)) + ' ' + rest;
+}
+// «12.» del davant: torna a numerar dins de cada part (després d'afegir o treure un tema)
+function renumber(txt) {
+  let n = 0;
+  return txt.split('\n').map(raw => {
+    const l = raw.trim();
+    if (l.startsWith('#')) { n = 0; return raw; }
+    if (!l || /^\[(\w+)\]$/.test(l) || !LINE.test(l)) return raw;
+    n++;
+    const m = raw.match(TL);
+    return m ? m[1] + m[2] + (m[3] || '') + (m[4] || '') + m[5].replace(/^(\s+)\d+\./, (_, s) => s + n + '.') : raw;
+  }).join('\n');
+}
+// Desplaça (d segons) el tema «from» i tots els següents. Si el tema d'abans acabava just on començava aquest, també es mou el seu final.
+function shiftText(txt, from, d) {
+  const { lines, tr } = scan(txt), x = tr[from], pv = tr[from - 1];
+  if (!x) return { err: 'Tema no encontrado.' };
+  if (!d) return { err: 'Falta el tiempo (mm:ss).' };
+  if (x.a + d < 0) return { err: 'Quedaría antes de 0:00.' };
+  if (pv && x.a + d <= pv.a) return { err: `Pisa el anterior (${fmt(pv.a)}).` };
+  tr.forEach((y, k) => {
+    if (k >= from) lines[y.ln] = retime(y.raw, y.a + d, y.b == null ? null : y.b + d);
+    else if (k === from - 1 && y.b === x.a) lines[y.ln] = retime(y.raw, y.a, x.a + d);
+  });
+  return { txt: lines.join('\n') };
+}
+
+// Validació (no canvia res): línies que no es poden llegir + avisos de temps. Els temes surten de parseSet, igual que a l'app.
+function why(l) {
+  if (/^\d{1,2}[:.]/.test(l)) return 'Hora mal escrita (00:01:40-00:03:20 Título)';
+  if (l.startsWith('[')) return 'Color: va solo en su línea, p. ej. [rosa]';
+  return 'Falta la hora al principio';
+}
+function check(txt) {
+  const errs = [], warns = [];
+  let open = false, pv = null, first = true, loose = false;
+  norm(txt).split('\n').forEach((raw, ln) => {
+    const l = raw.trim(); if (!l) return;
+    const L = ln + 1, s = cut(l);
+    if (l.startsWith('#')) { open = true; if (!l.replace(/^#+\s*/, '')) warns.push({ L, s, w: 'Parte sin nombre' }); return; }
+    const c = l.match(/^\[(\w+)\]$/);
+    if (c) {
+      if (!open) warns.push({ L, s, w: 'Color sin parte: no se usa' });
+      else if (!COL[c[1]]) warns.push({ L, s, w: `Color «${c[1]}» no existe` });
+      return;
+    }
+    const m = l.match(LINE);
+    if (!m) { errs.push({ L, s, w: why(l) }); return; }
+    if (!open && !loose) { warns.push({ L, s, w: 'Tema sin parte (falta «# Parte»)' }); loose = true; }
+    const a = secs(m[1]), b = m[2] ? secs(m[2]) : null;
+    if ([m[1], m[2]].some(t => t && t.split(':').slice(1).some(x => +x > 59))) warns.push({ L, s, w: 'Más de 59 min o s' });
+    const rest = m[3].replace(/^\d+\.\s*/, '').replace(/^[+-]\d\s+/, '');
+    if (!rest.trim() || /^[+-]\d$/.test(rest.trim())) warns.push({ L, s, w: 'Tema sin título' });
+    if (b != null && b <= a) warns.push({ L, s, w: 'Termina antes de empezar' });
+    if (first && a > 0) warns.push({ L, s, w: `Empieza en ${fmt(a)}, no en 0:00` });
+    if (pv) {
+      if (a < pv.a) warns.push({ L, s, w: `Va hacia atrás (anterior: ${fmt(pv.a)})` });
+      else if (pv.b != null && a < pv.b) warns.push({ L, s, w: `Pisa ${fmt(pv.b - a)} el anterior (acaba a ${fmt(pv.b)})` });
+      else if (pv.b != null && a > pv.b) warns.push({ L, s, w: `Hueco de ${fmt(a - pv.b)} (saldrá «Pausa»)` });
+    }
+    pv = { a, b }; first = false;
+  });
+  const r = parseSet(norm(txt));
+  return { ...r, errs, warns, total: r.tracks.length ? r.tracks.at(-1).b : 0 };
+}
+
+// Guardar el text (o tornar a l'original) + avís «Deshacer» que torna al d'abans
+const sameAsFile = txt => norm(txt).trimEnd() === norm(SET.txt).trimEnd();
+function saveTxt(txt, msg) {
+  const before = edited.get();
+  if (!edited.set(sameAsFile(txt) ? null : { txt: norm(txt), at: Date.now(), base: H0 })) { toast('No se pudo guardar (¿modo privado?)', 'err', null); return false; }
+  load(curTxt()); tick();
+  toast(msg, 'txt', () => { edited.set(before); load(curTxt()); tick(); toast(before ? 'Deshecho' : 'Original', 'undo', null); });
+  return true;
+}
+function restoreOrig() { hideCfms(); if (!edited.get()) return; if (!$('ed').hidden) closeEd(true); saveTxt(SET.txt, 'Setlist original'); }
+const fdate = d => d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }).replace('.', '') + ' ' + hhmm(d);
+function badges() {
+  const e = edited.get(), on = !!e;
+  const t = on ? `Editada · ${fdate(new Date(e.at))}` : '';
+  const old = 'Solo en este móvil.' + (on && e.base && e.base !== H0 ? ' El archivo ha cambiado.' : '');
+  ['slTag', 'txTag', 'bOrig'].forEach(k => $(k).hidden = !on);
+  $('slTagT').innerHTML = $('txTagT').innerHTML = on ? esc(t) + `<small>${esc(old)}</small>` : '';
+  setText($('txS'), on ? `Editada · ${fdate(new Date(e.at))}` : 'Original');
+  setText($('txD'), `${plural(tracks.length, 'tema', 'temas')} · ${plural(parts.length, 'parte', 'partes')} · ${fmt(TOTAL)}`);
+  if (!on) hideCfms();
+}
+// Confirmació «Volver al original» (a la mateixa pàgina, no amb una finestra): n'hi ha una a Ajustes, al Setlist i a l'editor
+const CFMS = ['oCfm', 'slCfm', 'edOCfm'];
+function hideCfms() { CFMS.forEach(k => $(k).hidden = true); }
+function askOrig(k) { hideCfms(); $(k).hidden = false; $(k).querySelector('[data-orig-yes]').focus(); }
+$('bOrig').onclick = () => askOrig('oCfm');
+$('slOrig').onclick = () => askOrig('slCfm');
+$('edOrig').onclick = () => askOrig('edOCfm');
+document.querySelectorAll('[data-orig-yes]').forEach(b => b.onclick = restoreOrig);
+document.querySelectorAll('[data-orig-no]').forEach(b => b.onclick = hideCfms);
+
+// Teclat de l'iPhone: l'editor i la fitxa s'ajusten a la part visible (visualViewport)
+const VV = window.visualViewport;
+function fitVV() {
+  const r = document.documentElement.style, h = VV ? VV.height : innerHeight, t = VV ? VV.offsetTop : 0, kb = Math.max(0, innerHeight - h - t);
+  r.setProperty('--vvh', h + 'px'); r.setProperty('--vvt', t + 'px'); r.setProperty('--kb', kb + 'px');
+  document.body.classList.toggle('kb', kb > 120);
+}
+VV?.addEventListener('resize', fitVV); VV?.addEventListener('scroll', fitVV); addEventListener('resize', fitVV);
+addEventListener('orientationchange', () => setTimeout(fitVV, 300)); addEventListener('pageshow', fitVV);
+
+// Finestra a sobre (editor o fitxa): la resta no es pot tocar ni la llegeix el lector de pantalla
+let back = null;
+function modal(on) {
+  document.body.classList.toggle('modal', on);
+  [document.querySelector('header'), ...document.querySelectorAll('.tab'), $('tabbar')].forEach(e => e.inert = on);
+  if (on) { back = document.activeElement; closeToast(); } else if (back?.isConnected) back.focus({ preventScroll: true });
+}
+
+// ---- Editor de text ----
+const ta = $('edTa');
+let edBase = '', edT = 0, edUndo = null, cancelArm = 0;
+function openEd() {
+  edBase = curTxt(); ta.value = edBase; edUndo = null;
+  setText($('edMsg'), ''); $('edCfm').hidden = true; hideCfms(); disarmCancel();
+  $('ed').hidden = false; modal(true); fitVV();
+  validate(true);
+  // a l'obrir, el text es posa al tema que sona
+  const k = Math.max(0, tracks.findIndex(x => x === curTrack()));
+  const ln = scan(ta.value).tr[k]?.ln || 0;
+  ta.scrollTop = Math.max(0, lineTop(ln) - ta.clientHeight / 3);
+  $('shFrom').value = String(k);
+  $('edT').focus({ preventScroll: true });
+}
+function closeEd() { clearTimeout(edT); disarmCancel(); $('ed').hidden = true; modal(false); }
+const curTrack = () => { const t0 = startAt(); if (!t0) return null; const el = (Date.now() - t0) / 1000; return tracks.find(x => el >= x.a && el < x.b) || null; };
+// alçada (px) on comença la línia ln dins del textarea (amb un mirall amb el mateix estil, per les línies que fan salt)
+let mirror = null;
+function lineTop(ln) {
+  if (!mirror) { mirror = document.createElement('div'); mirror.setAttribute('aria-hidden', 'true'); document.body.appendChild(mirror); }
+  const cs = getComputedStyle(ta);
+  mirror.style.cssText = `position:fixed;visibility:hidden;left:0;top:0;pointer-events:none;white-space:pre-wrap;overflow-wrap:anywhere;box-sizing:border-box;width:${ta.clientWidth}px;font:${cs.font};padding:${cs.padding};border:0;tab-size:${cs.tabSize}`;
+  mirror.textContent = ta.value.split('\n').slice(0, ln).join('\n') + (ln ? '\n' : '') + '​';
+  const y = mirror.scrollHeight - parseFloat(cs.lineHeight) - parseFloat(cs.paddingBottom);
+  mirror.style.display = 'none'; mirror.textContent = '';
+  return y;
+}
+function goLine(L) {
+  const ls = ta.value.split('\n'); let p = 0;
+  for (let k = 0; k < L - 1 && k < ls.length; k++) p += ls[k].length + 1;
+  ta.focus({ preventScroll: true });
+  ta.setSelectionRange(p, p + (ls[L - 1] || '').length);
+  ta.scrollTop = Math.max(0, lineTop(L - 1) - ta.clientHeight / 3);
+}
+function caretLine() { return ta.value.slice(0, ta.selectionStart).split('\n').length; }
+let lastCheck = null;
+function validate(now) {
+  clearTimeout(edT);
+  if (!now) { edT = setTimeout(() => validate(true), 300); return; }
+  const r = lastCheck = check(ta.value), ne = r.errs.length, nw = r.warns.length;
+  setText($('edStat'), r.tracks.length ? `${plural(r.parts.length, 'parte', 'partes')} · ${plural(r.tracks.length, 'tema', 'temas')} · ${fmt(r.total)}` : 'Vacía');
+  const chip = $('edChip');
+  chip.className = 'chip ' + (!r.tracks.length || ne ? 'err' : nw ? 'warn' : 'ok');
+  setText(chip, !r.tracks.length ? 'Vacía' : ne ? plural(ne, 'error', 'errores') : nw ? plural(nw, 'aviso', 'avisos') : 'OK');
+  const row = (x, c) => `<button type="button" class="${c}" data-l="${x.L}"><b>L${x.L}</b><span>${esc(x.w)}</span><small>${esc(x.s)}</small></button>`;
+  const MAX = 40, all = [...r.errs.map(x => row(x, 'e')), ...r.warns.map(x => row(x, 'w'))];
+  $('edIss').innerHTML = all.length ? all.slice(0, MAX).join('') + (all.length > MAX ? `<p>+${all.length - MAX} más</p>` : '') : '';
+  if (!$('edCfm').hidden && !ne) $('edCfm').hidden = true;
+  // llista del «Desplazar desde el tema»
+  const sel = $('shFrom'), keep = sel.value;
+  sel.innerHTML = r.tracks.map((x, k) => { const v = shown(x.t, x.mk); return `<option value="${k}">${esc(cut(`${pname(x.p) || 'Sin parte'} · ${x.i}. ${fmt(x.a)} · ${(v.dm ? v.dm + ' ' : '') + v.dt}`, 64))}</option>`; }).join('');
+  if (keep && +keep < r.tracks.length) sel.value = keep;
+}
+ta.addEventListener('input', () => { validate(); disarmCancel(); });
+$('edIss').onclick = e => { const b = e.target.closest('[data-l]'); if (b) goLine(+b.dataset.l); };
+$('edChip').onclick = () => { if (document.activeElement === ta) ta.blur(); else if ($('edIss').firstElementChild) $('edIss').firstElementChild.focus(); else ta.focus(); };
+function edSave(force) {
+  const txt = norm(ta.value), r = check(txt);
+  if (!r.tracks.length) { $('edCfm').hidden = true; setText($('edMsg'), 'No hay ningún tema válido.'); return; }
+  if (r.errs.length && !force) {
+    setText($('edCfmT'), `${plural(r.errs.length, 'línea con error no saldrá', 'líneas con error no saldrán')}.`);
+    $('edCfm').hidden = false; ta.blur(); $('edD').scrollTop = 0; $('edForce').focus();
+    return;
+  }
+  if (txt.trimEnd() === norm(curTxt()).trimEnd()) { closeEd(); return; }   // sense canvis
+  closeEd();
+  saveTxt(txt, `Guardada · ${plural(r.tracks.length, 'tema', 'temas')}`);
+}
+$('edSave').onclick = () => edSave(false);
+$('edForce').onclick = () => edSave(true);
+$('edBack').onclick = () => { $('edCfm').hidden = true; const e = lastCheck?.errs[0]; if (e) goLine(e.L); };
+// «Cancelar» amb canvis sense guardar: cal tocar-lo dos cops
+function disarmCancel() { clearTimeout(cancelArm); const b = $('edCancel'); b.classList.remove('arm'); setText(b, 'Cancelar'); }
+$('edCancel').onclick = () => {
+  const b = $('edCancel');
+  if (norm(ta.value) === norm(edBase) || b.classList.contains('arm')) return closeEd();
+  b.classList.add('arm'); setText(b, '¿Descartar?'); cancelArm = setTimeout(disarmCancel, 3000);
+};
+// Copiar (per enviar-lo al Mac)
+$('edCopy').onclick = async () => {
+  const v = ta.value; let ok = false;
+  try { await navigator.clipboard.writeText(v); ok = true; } catch {
+    try { const s = ta.selectionStart, e = ta.selectionEnd; ta.select(); ok = document.execCommand('copy'); ta.setSelectionRange(s, e); } catch {}
+  }
+  setText($('edMsg'), ok ? 'Copiado.' : 'No se pudo copiar. Selecciona todo y copia a mano.');
+};
+// Desplazar temps
+let shSign = 1;
+const setSign = v => { shSign = v; $('shP').setAttribute('aria-pressed', v > 0); $('shM').setAttribute('aria-pressed', v < 0); };
+$('shP').onclick = () => setSign(1); $('shM').onclick = () => setSign(-1);
+$('shGo').onclick = () => {
+  const v = parseT($('shV').value), k = +$('shFrom').value;
+  if (!v) { setText($('edMsg'), 'Falta el tiempo (mm:ss).'); $('shV').focus(); return; }
+  const r = shiftText(ta.value, k, shSign * v);
+  if (r.err) { setText($('edMsg'), r.err); return; }
+  edUndo = ta.value; ta.value = r.txt; validate(true); disarmCancel();
+  const x = scan(ta.value).tr[k];
+  $('edMsg').innerHTML = `${esc(`${shSign > 0 ? '+' : '−'}${fmt(v)} desde el ${lastCheck.tracks[k].i} (${pname(lastCheck.tracks[k].p) || 'sin parte'}). Falta Guardar.`)}<button type="button" id="edUndo">Deshacer</button>`;
+  $('edUndo').onclick = () => { if (edUndo === null) return; ta.value = edUndo; edUndo = null; validate(true); setText($('edMsg'), 'Deshecho.'); };
+  if (x) ta.scrollTop = Math.max(0, lineTop(x.ln) - ta.clientHeight / 3);
+};
+$('bEdit').onclick = openEd;
+
+// ---- Edició ràpida des de la pestanya Setlist (toca un tema): títol, marca, inici/fi, borrar, afegir-ne un darrere ----
+let qe = false, qk = -1, qIns = false, qOrig = null, qMark = '', qOld = null;
+const MARKS = ['', '+1', '+2', '+3', '-1', '-2', '-3'];
+function qeAttrs() {
+  lis.forEach(li => { if (qe) { li.tabIndex = 0; li.setAttribute('role', 'button'); } else { li.removeAttribute('tabindex'); li.removeAttribute('role'); } });
+}
+function setQE(on) {
+  qe = on; document.body.classList.toggle('qe', on);
+  $('bQE').setAttribute('aria-pressed', on); setText($('bQE'), on ? 'Listo' : 'Editar');
+  qeAttrs();
+}
+$('bQE').onclick = () => setQE(!qe);
+$('list').addEventListener('click', e => {
+  const bl = !qe && e.target.closest('.bl');
+  if (bl) {   // campana: avisar (o no) abans d'aquest tema
+    const k = +bl.closest('li').dataset.i, on = !starI.has(k), before = stars.map(s => ({ ...s }));
+    setStar(k, on); tick();
+    toast(on ? `Aviso: «${cut(tracks[k].dt, 40)}»` : `Sin aviso: «${cut(tracks[k].dt, 40)}»`, 'star', () => { stars = before; saveStars(); matchStars(); paintStars(); last = -3; tick(); });
+    return;
+  }
+  const li = qe && e.target.closest('li[data-i]'); if (li) openQ(+li.dataset.i, false);
+});
+$('list').addEventListener('keydown', e => { const li = qe && (e.key === 'Enter' || e.key === ' ') && e.target.closest('li[data-i]'); if (li) { e.preventDefault(); openQ(+li.dataset.i, false); } });
+function marks(cur) {
+  const ms = MARKS.includes(cur) ? MARKS : [...MARKS.slice(0, 6), cur];
+  $('qM').innerHTML = ms.map(m => `<button type="button" data-m="${m}" aria-pressed="${m === cur}" aria-label="${m ? 'Marca ' + m : 'Sin marca'}">${m ? m.replace('-', '−') : 'No'}</button>`).join('');
+  qMark = cur;
+}
+$('qM').onclick = e => { const b = e.target.closest('[data-m]'); if (!b) return; qMark = b.dataset.m; $('qM').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b)); };
+const setTg = (b, on) => b.setAttribute('aria-pressed', on);
+const tgOn = b => b.getAttribute('aria-pressed') === 'true';
+function openQ(k, ins) {
+  const x = tracks[k]; if (!x) return;
+  qk = k; qIns = ins;
+  const s = scan(curTxt()).tr[k];
+  qOrig = { a: ins ? x.b : x.a, b: ins ? x.b + (x.b - x.a) : x.b };
+  $('qH').innerHTML = ins ? `Nuevo tras el ${x.i}<small>después de «${esc(cut(x.dt, 40))}»</small>`
+                          : `${esc(pname(x.p) || 'Tema')} · ${x.i}${x === curTrack() ? ' · sonando' : ''}<small>${esc(cut((x.dm ? x.dm + ' ' : '') + x.dt, 60))}</small>`;
+  $('qT').value = ins ? '' : s.dt;
+  marks(ins ? '' : s.dm);
+  $('qA').value = fmt(qOrig.a); $('qB').value = fmt(qOrig.b);
+  setTg($('qMove'), ins);
+  setTg($('qStar'), !ins && starI.has(k));
+  qOld = ins ? null : idents()[k];
+  setText($('qMoveT'), 'Mover los siguientes');
+  setText($('qErr'), ''); $('qMore').hidden = ins; $('qDelCfm').hidden = true;
+  $('shade').hidden = $('sheet').hidden = false; modal(true); fitVV();
+  $('sheet').scrollTop = 0;
+  (ins ? $('qT') : $('qH')).focus({ preventScroll: true });
+}
+function closeQ() { $('shade').hidden = $('sheet').hidden = true; modal(false); }
+$('qCancel').onclick = closeQ; $('shade').onclick = closeQ;
+$('qMove').onclick = () => setTg($('qMove'), !tgOn($('qMove')));
+$('qStar').onclick = () => setTg($('qStar'), !tgOn($('qStar')));
+// amb «Mover los siguientes», canviar l'inici arrossega el final (el tema dura el mateix)
+$('qA').addEventListener('input', () => { setText($('qErr'), ''); const a = parseT($('qA').value), b = parseT($('qB').value); if (tgOn($('qMove')) && a != null && b != null && qOrig) { const d = qOrig.b - qOrig.a; if (b === qOrig.b || b - a !== d) { $('qB').value = fmt(a + d); } } });
+$('qB').addEventListener('input', () => setText($('qErr'), ''));
+$('qSave').onclick = () => {
+  const title = $('qT').value.trim(), a = parseT($('qA').value), b = parseT($('qB').value), move = tgOn($('qMove'));
+  const err = m => { setText($('qErr'), m); };
+  if (!title) return err('Falta el título.');
+  if (a == null) return err('Inicio: usa h:mm:ss (1:23:20).');
+  if (b == null) return err('Fin: usa h:mm:ss.');
+  if (b <= a) return err('El fin va antes del inicio.');
+  const cur = curTxt(), { lines, tr } = scan(cur), x = tr[qk], pv = tr[qk - 1], nx = tr[qk + 1];
+  if (!x) return err('Este tema ya no existe.');
+  let out;
+  if (!qIns) {
+    const oldB = tracks[qk].b;
+    if (pv && a <= pv.a) return err(`Empieza antes que el anterior (${fmt(pv.a)}).`);
+    if (!move && nx && b > nx.a) return err(`Pisa el siguiente (${fmt(nx.a)}). Activa «Mover los siguientes».`);
+    if (!move && nx && b < nx.a && b !== oldB) return err(`Deja un hueco hasta ${fmt(nx.a)}. Activa «Mover los siguientes».`);
+    const d = move ? b - oldB : 0;
+    if (move && d) tr.forEach((y, j) => { if (j > qk) lines[y.ln] = retime(y.raw, y.a + d, y.b == null ? null : y.b + d); });
+    if (pv && pv.b === x.a) lines[pv.ln] = retime(pv.raw, pv.a, a);
+    const implicit = nx ? nx.a + d : a + 180;   // sense hora final, acaba quan comença el següent
+    lines[x.ln] = trackLine(x, a, x.b != null || b !== implicit ? b : null, title, qMark);
+    out = lines.join('\n');
+  } else {
+    if (a <= x.a) return err(`Tiene que ir después del ${tracks[qk].i} (${fmt(x.a)}).`);
+    if (!move && nx && b > nx.a) return err(`Pisa el siguiente (${fmt(nx.a)}). Activa «Mover los siguientes».`);
+    const d = move && nx ? b - nx.a : 0;
+    if (d) tr.forEach((y, j) => { if (j > qk) lines[y.ln] = retime(y.raw, y.a + d, y.b == null ? null : y.b + d); });
+    if (x.b != null && x.b !== a) lines[x.ln] = retime(x.raw, x.a, a);   // l'anterior acaba on comença el nou
+    lines.splice(x.ln + 1, 0, T6(a) + '-' + T6(b) + ' ' + (x.num != null ? '0. ' : '') + (qMark ? qMark + ' ' : '') + title);
+    out = renumber(lines.join('\n'));
+  }
+  const star = tgOn($('qStar')), was = !qIns && starI.has(qk), k = qIns ? qk + 1 : qk, old = qOld;
+  if (out === cur) { closeQ(); if (star !== was) { setStar(qk, star); tick(); } return; }
+  closeQ();
+  // la campana segueix el tema encara que se li canviï el títol (es torna a guardar amb la identitat nova)
+  if (saveTxt(out, qIns ? `Añadido: ${cut(title, 40)}` : `Guardado: ${cut(title, 40)}`) && (star || was)) { setStar(k, star, old); tick(); }
+};
+$('qIns').onclick = () => openQ(qk, true);
+$('qDel').onclick = () => {
+  const x = tracks[qk], nx = tracks[qk + 1];
+  if (tracks.length < 2) { setText($('qErr'), 'Es el único tema.'); return; }
+  setText($('qDelT'), `¿Borrar «${cut((x.dm ? x.dm + ' ' : '') + x.dt, 50)}»?`);
+  $('qDelMove').hidden = !nx;
+  if (nx) { setTg($('qDelMove'), true); setText($('qDelMoveT'), `Adelantar los siguientes (${fmt(nx.a - x.a)})`); }
+  $('qDelCfm').hidden = false; $('qDelYes').focus();
+};
+$('qDelMove').onclick = () => setTg($('qDelMove'), !tgOn($('qDelMove')));
+$('qDelNo').onclick = () => { $('qDelCfm').hidden = true; };
+$('qDelYes').onclick = () => {
+  const cur = curTxt(), { lines, tr } = scan(cur), x = tr[qk], pv = tr[qk - 1], nx = tr[qk + 1];
+  if (!x) return closeQ();
+  const title = x.dt, move = nx && tgOn($('qDelMove')), d = move ? x.a - nx.a : 0;
+  if (d) tr.forEach((y, j) => { if (j > qk) lines[y.ln] = retime(y.raw, y.a + d, y.b == null ? null : y.b + d); });
+  // sense moure els següents, l'anterior s'allarga fins al següent (si no, hi hauria un forat)
+  if (!move && pv && pv.b != null && pv.b === x.a) lines[pv.ln] = retime(pv.raw, pv.a, nx ? nx.a : (x.b ?? tracks[qk].b));
+  lines.splice(x.ln, 1);
+  closeQ();
+  if (starI.has(qk)) setStar(qk, false);
+  saveTxt(renumber(lines.join('\n')), `Borrado: ${cut(title, 40)}`);
+};
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if (!$('sheet').hidden) closeQ(); else if (!$('ed').hidden) $('edCancel').click();
+});
+
+load(curTxt()); fitVV();
 tick(); { const t = tab; tab = null; show(t); } setInterval(tick, 500);
 
 // Pantalla sempre encesa mentre l'app és visible (Screen Wake Lock). Si el mòbil no ho suporta, no passa res.
@@ -708,7 +1603,7 @@ keepAwake();
 // Sense cobertura: el service worker guarda l'app al mòbil. Si arriba una versió nova i no hi ha cap tema sonant, es recarrega sola.
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   let had = !!navigator.serviceWorker.controller;
-  navigator.serviceWorker.addEventListener('controllerchange', () => { if (!had) { had = true; return; } if (last < 0) location.reload(); });
+  navigator.serviceWorker.addEventListener('controllerchange', () => { if (!had) { had = true; return; } if (last < 0 && !document.body.classList.contains('modal')) location.reload(); });
   navigator.serviceWorker.register('sw.js').catch(() => {});
 }
 </script>
