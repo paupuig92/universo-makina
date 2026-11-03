@@ -257,7 +257,12 @@ body.qe #list li:after{content:"✎";position:absolute;right:10px;top:50%;transf
 body.qe #list li:active{background:var(--s2)}
 
 /* ---- Ajustes: grups separats per línies, sense caixes ---- */
-#tab-ajustes .sec:first-child{margin-top:18px}
+#tab-ajustes>h2.sec:first-of-type{margin-top:18px}
+/* Guia «Añadir a pantalla de inicio» (només a Safari, no a l'app de la icona): bloc amb una línia taronja, sense animacions */
+.guia{display:flex;align-items:center;gap:12px;margin-top:16px;padding:8px 0 8px 12px;border-left:3px solid var(--orange)}
+.guia p{flex:1;min-width:0;display:grid;gap:3px;font-size:15px;font-weight:800;color:var(--fg);line-height:1.25}
+.guia small{font-size:13px;font-weight:600;color:var(--dim)}
+.guia button{flex:none;min-height:44px;padding:6px 12px;font-size:14px}
 .card{display:grid;gap:10px}
 .card>p:not([class]),.av .hint{font-size:13px;font-weight:600;color:var(--dim);line-height:1.35}
 .src{display:grid;gap:2px}
@@ -494,6 +499,7 @@ body.qe .bl{display:none}
 
 <!-- Pestanya «Ajustes»: hora d'inici al mòbil, sincronització, avisos i dades del set -->
 <section class="tab" id="tab-ajustes" aria-label="Ajustes" hidden>
+<div class="guia" id="guia" hidden><p>Añádela a la pantalla de inicio<small>Compartir → Añadir a pantalla de inicio. Se abre sin cobertura y a pantalla completa. Lo que guardes en Safari no pasa a la app.</small></p><button type="button" id="guiaOk">Entendido</button></div>
 <h2 class="sec">Inicio</h2>
 <div class="card">
   <p class="src"><span id="srcT"></span><small id="srcD"></small></p>
@@ -523,7 +529,7 @@ body.qe .bl{display:none}
   <button class="save" id="bEdit">Editar setlist</button>
   <button id="bOrig" hidden>Volver al original</button>
   <div class="cfm" id="oCfm" hidden><p>¿Volver al original? Se pierden tus cambios.</p><div><button class="yes" data-orig-yes>Volver</button><button data-orig-no>Cancelar</button></div></div>
-  <p>Solo en este móvil. Para pasarla al Mac: Editar setlist → Copiar.</p>
+  <p id="txHelp">Solo en este móvil. Para pasarla al Mac: Editar setlist → Copiar.</p>
 </div>
 <h2 class="sec">Set</h2>
 <div class="card"><div class="info" id="info"></div></div>
@@ -1525,9 +1531,15 @@ $('edCancel').onclick = () => {
   if (norm(ta.value) === norm(edBase) || b.classList.contains('arm')) return closeEd();
   b.classList.add('arm'); setText(b, '¿Descartar?'); cancelArm = setTimeout(disarmCancel, 3000);
 };
-// Copiar (per enviar-lo al Mac)
+// Enviar (full de compartir de l'iPhone: AirDrop al Mac, Notas, Copiar…). Si no n'hi ha, es copia.
+const canShare = !!navigator.share;
+if (canShare) { setText($('edCopy'), 'Enviar'); setText($('txHelp'), 'Solo en este móvil. Para pasarla al Mac: Editar setlist → Enviar.'); }
 $('edCopy').onclick = async () => {
   const v = ta.value; let ok = false;
+  if (canShare) {
+    try { await navigator.share({ title: SET.nom || 'Setlist', text: v }); return; }
+    catch (e) { if (e?.name === 'AbortError') return; }   // cancel·lat: no cal dir res
+  }
   try { await navigator.clipboard.writeText(v); ok = true; } catch {
     try { const s = ta.selectionStart, e = ta.selectionEnd; ta.select(); ok = document.execCommand('copy'); ta.setSelectionRange(s, e); } catch {}
   }
@@ -1670,6 +1682,12 @@ document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
   if (!$('sheet').hidden) closeQ(); else if (!$('ed').hidden) $('edCancel').click();
 });
+
+// Guia per afegir-la a la pantalla de inici: només a l'iPhone/iPad des de Safari (no a l'app de la icona). «Entendido» la treu (um.guia).
+const standalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+$('guia').hidden = standalone() || !ios || (() => { try { return !!localStorage.getItem('um.guia'); } catch { return false; } })();
+$('guiaOk').onclick = () => { $('guia').hidden = true; try { localStorage.setItem('um.guia', '1'); } catch {} };
 
 load(curTxt()); fitVV();
 tick(); { const t = tab; tab = null; show(t); } setInterval(tick, 500);
