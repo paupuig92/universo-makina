@@ -45,6 +45,8 @@ body{
   padding:calc(var(--sat) + 14px) calc(env(safe-area-inset-right) + 16px) calc(env(safe-area-inset-bottom) + var(--tabh) + 23px) calc(env(safe-area-inset-left) + 16px);
 }
 /* App a la pantalla d'inici (barra d'estat transparent): res no passa per sota del rellotge i la bateria */
+/* Sense zoom amb doble toc ni pinça (és una eina, no una web) */
+html{touch-action:pan-x pan-y;-webkit-text-size-adjust:100%}
 :root{--sat:env(safe-area-inset-top)}
 /* Pantalla d'inici (iPhone): l'iOS difumina una franja sota la barra d'estat; el contingut comença més avall i la franja queda negra */
 @media (display-mode:standalone) and (orientation:portrait){:root{--sat:calc(env(safe-area-inset-top) + 22px)}}
@@ -1640,6 +1642,9 @@ addEventListener('pointerdown', keepAwake, { passive: true });   // per si el pr
 keepAwake();
 
 // Sense cobertura: el service worker guarda l'app al mòbil. Si arriba una versió nova i no hi ha cap tema sonant, es recarrega sola.
+// iOS: la pinça també fa zoom encara que el CSS digui que no
+document.addEventListener('gesturestart', e => e.preventDefault());
+
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   let had = !!navigator.serviceWorker.controller;
   navigator.serviceWorker.addEventListener('controllerchange', () => { if (!had) { had = true; return; } if (updAsk) return location.reload(); if (last < 0 && !document.body.classList.contains('modal')) location.reload(); });
