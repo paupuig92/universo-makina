@@ -921,6 +921,8 @@ if (!TABS.includes(tab)) tab = 'ahora';
 const toCur = smooth => { const li = document.querySelector('li.cur'); if (li) li.scrollIntoView({ block: 'center', behavior: smooth ? how() : 'auto' }); else scrollTo(0, 0); };
 function show(t) {
   const again = t === tab;
+  // Primer amunt i després canviar el contingut: a l'iPhone, si la pàgina s'encongeix amb scroll, la barra de baix es desplaça
+  if (!again && t !== 'setlist') scrollTo({ top: 0 });
   tab = t; try { localStorage.setItem('um.tab', t); } catch {}
   TABS.forEach(k => { $('tab-' + k).hidden = k !== t; });
   document.querySelectorAll('#tabbar [data-tab]').forEach(b => b.dataset.tab === t ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current'));
@@ -1405,9 +1407,21 @@ function modal(on) {
 // ---- Editor de text ----
 const ta = $('edTa');
 let edBase = '', edT = 0, edUndo = null, cancelArm = 0;
+// Esborrany: el que s'escriu es guarda a cada canvi (um.draft.<id>), per si l'iPhone tanca l'app abans de Guardar.
+// Només es recupera si la setlist de base és la mateixa; s'esborra en tancar l'editor (Guardar o Cancelar).
+const DRK = 'um.draft.' + SID;
+const draft = {
+  get() { try { const o = JSON.parse(localStorage.getItem(DRK)); return o && typeof o.txt === 'string' ? o : null; } catch { return null; } },
+  set(o) { try { o ? localStorage.setItem(DRK, JSON.stringify(o)) : localStorage.removeItem(DRK); } catch {} }
+};
+let drT = 0;
+function saveDraft() { clearTimeout(drT); if ($('ed').hidden) return; draft.set(norm(ta.value) === norm(edBase) ? null : { txt: ta.value, from: hash(edBase), at: Date.now() }); }
 function openEd() {
   edBase = curTxt(); ta.value = edBase; edUndo = null;
   setText($('edMsg'), ''); $('edCfm').hidden = true; hideCfms(); disarmCancel();
+  const d = draft.get();
+  if (d && d.from === hash(edBase) && norm(d.txt) !== norm(edBase)) { ta.value = d.txt; setText($('edMsg'), 'Recuperado el texto sin guardar.'); }
+  else if (d) draft.set(null);
   $('ed').hidden = false; modal(true); fitVV();
   validate(true);
   // a l'obrir, el text es posa al tema que sona
@@ -1417,7 +1431,7 @@ function openEd() {
   $('shFrom').value = String(k);
   $('edT').focus({ preventScroll: true });
 }
-function closeEd() { clearTimeout(edT); disarmCancel(); $('ed').hidden = true; modal(false); }
+function closeEd() { clearTimeout(edT); clearTimeout(drT); draft.set(null); disarmCancel(); $('ed').hidden = true; modal(false); }
 const curTrack = () => { const t0 = startAt(); if (!t0) return null; const el = (Date.now() - t0) / 1000; return tracks.find(x => el >= x.a && el < x.b) || null; };
 // alçada (px) on comença la línia ln dins del textarea (amb un mirall amb el mateix estil, per les línies que fan salt)
 let mirror = null;
@@ -1456,7 +1470,9 @@ function validate(now) {
   sel.innerHTML = r.tracks.map((x, k) => { const v = shown(x.t, x.mk); return `<option value="${k}">${esc(cut(`${pname(x.p) || 'Sin parte'} · ${x.i}. ${fmt(x.a)} · ${(v.dm ? v.dm + ' ' : '') + v.dt}`, 64))}</option>`; }).join('');
   if (keep && +keep < r.tracks.length) sel.value = keep;
 }
-ta.addEventListener('input', () => { validate(); disarmCancel(); });
+ta.addEventListener('input', () => { validate(); disarmCancel(); clearTimeout(drT); drT = setTimeout(saveDraft, 500); });
+addEventListener('pagehide', saveDraft);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') saveDraft(); });
 $('edIss').onclick = e => { const b = e.target.closest('[data-l]'); if (b) goLine(+b.dataset.l); };
 $('edChip').onclick = () => { if (document.activeElement === ta) ta.blur(); else if ($('edIss').firstElementChild) $('edIss').firstElementChild.focus(); else ta.focus(); };
 function edSave(force) {
@@ -1498,10 +1514,10 @@ $('shGo').onclick = () => {
   if (!v) { setText($('edMsg'), 'Falta el tiempo (mm:ss).'); $('shV').focus(); return; }
   const r = shiftText(ta.value, k, shSign * v);
   if (r.err) { setText($('edMsg'), r.err); return; }
-  edUndo = ta.value; ta.value = r.txt; validate(true); disarmCancel();
+  edUndo = ta.value; ta.value = r.txt; validate(true); disarmCancel(); saveDraft();
   const x = scan(ta.value).tr[k];
   $('edMsg').innerHTML = `${esc(`${shSign > 0 ? '+' : '−'}${fmt(v)} desde el ${lastCheck.tracks[k].i} (${pname(lastCheck.tracks[k].p) || 'sin parte'}). Falta Guardar.`)}<button type="button" id="edUndo">Deshacer</button>`;
-  $('edUndo').onclick = () => { if (edUndo === null) return; ta.value = edUndo; edUndo = null; validate(true); setText($('edMsg'), 'Deshecho.'); };
+  $('edUndo').onclick = () => { if (edUndo === null) return; ta.value = edUndo; edUndo = null; validate(true); saveDraft(); setText($('edMsg'), 'Deshecho.'); };
   if (x) ta.scrollTop = Math.max(0, lineTop(x.ln) - ta.clientHeight / 3);
 };
 $('bEdit').onclick = openEd;
