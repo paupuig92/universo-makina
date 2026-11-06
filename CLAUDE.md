@@ -12,7 +12,7 @@ Neix de la prova del set makina dins la Midnight App (31-10-2026, perfil Pau, 19
 | `sets/<id>/set.txt` | El setlist en text (format de sota). Un per set. |
 | `sets/<id>/set.json` | Nom, lloc i hora d'inici (`inici`, amb zona: `2026-11-01T00:00:00+01:00`). |
 | `sw.js` · `manifest.webmanifest` · `assets/` | Funciona sense cobertura (service worker), icona a la pantalla d'inici i logo d'UM. `build.py` els copia a `docs/`. La versió és una empremta del contingut (pàgina, set, sw.js, manifest, icones): si no canvia res, és la mateixa i els mòbils no rebaixen l'app. A Ajustes surt «Versión del dd/mm hh:mm · empremta». |
-| `build.py` | `python3 build.py` llista els sets · `python3 build.py <id>` genera `docs/index.html` amb aquest set. |
+| `build.py` | `python3 build.py` llista els sets · `python3 build.py <id>` genera `docs/index.html` amb aquest set **xifrat** (et demana el codi). `--sin-cifrar` = només per provar. |
 | `docs/` | El que es publicarà (GitHub Pages), quan en Pau doni l'OK. |
 
 ## Format del setlist (igual que les tasques de la Midnight App, s'hi pot copiar)
@@ -82,3 +82,10 @@ Com els cartells d'UM, sec i sense «capa IA». Les regles també són al princi
 - Per a qui és: en Pau en directe, l'equip o el públic (canvia la pantalla, no les dades).
 - Repo nou `paupuig92/universo-makina` + GitHub Pages (espera OK).
 - Possibles: pantalla gran per a LED/VJ, sincronitzar tots els mòbils alhora (servidor; també per compartir la setlist editada).
+
+## Codi d'accés (setlist xifrat, opció A · 06-11-2026)
+- Cada esdeveniment té un **codi** (frase de 4 paraules, mínim 12 lletres). `build.py <id>` xifra el set (nom, lloc, hora i text) amb AES-GCM; la clau surt del codi (PBKDF2-SHA256, 600.000 voltes). Al repo públic i a `docs/` **només hi ha text il·legible**. El codi no es guarda enlloc (ni al repo ni a cap fitxer): es posa a mà a la Terminal (o amb `UM_CODE=…`). Necessita `python3 -m pip install --user cryptography`.
+- A l'app: si no hi ha el set desxifrat al mòbil surt «Código de acceso». Es desxifra al mòbil, es guarda (`um.set.<id>` + `um.key.<id>`) i no cal tornar-lo a escriure; si surt un set nou (mateix codi) s'obre sol. **Ajustes → Bloquear app** (dos tocs) esborra el set i el codi d'aquest mòbil. Majúscules i espais de més no importen.
+- Honest: això és confidencialitat real, **no hi ha rols**: qui té el codi ho veu tot, i les edicions són locals a cada mòbil. Un codi curt es pot forçar sense connexió: sempre frases llargues. Per canviar un codi: tornar a fer `build.py` amb el nou i repartir-lo.
+- **El text en clar no ha d'anar a GitHub**: `sets/` i `UNIVERSO-MAKINA-BRIEF.md` són al `.gitignore` (només viuen al Mac). Si algun cop apareix `set.txt` al repo, parar i avisar.
+- CSP: `build.py` posa el hash dels scripts a `script-src` (sense `'unsafe-inline'`). Si es canvia un `<script>`, cal tornar a fer el build. La pàgina porta `noindex`.

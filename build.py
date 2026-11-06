@@ -3,9 +3,13 @@
    La versió és una empremta del contingut: si no canvia res, és la mateixa.
 
   python3 build.py                 → llista els sets
-  python3 build.py <id>            → posa aquest set a docs/ (el que es publicarà)
+  python3 build.py <id>            → posa aquest set a docs/ XIFRAT (et demana el codi de l'esdeveniment)
+  python3 build.py <id> --sin-cifrar → sense xifrar (només per provar en local, MAI per publicar)
+
+El codi no es guarda enlloc: el poses tu cada vegada (o amb la variable UM_CODE). Només el pots escriure al terminal.
+Necessita «cryptography»:  python3 -m pip install --user cryptography
 """
-import hashlib, json, re, shutil, sys, time
+import base64, getpass, hashlib, hmac, json, os, re, shutil, sys, time, unicodedata
 from pathlib import Path
 
 ROOT = Path(__file__).parent
@@ -21,12 +25,36 @@ if len(sys.argv) < 2:
     sys.exit(0)
 
 sid = sys.argv[1]
+PLAIN = "--sin-cifrar" in sys.argv
 if sid not in sets():
     sys.exit(f"No trobo sets/{sid}/set.txt")
 cfg = json.loads((SETS / sid / "set.json").read_text())
 cfg["id"] = sid
 cfg["txt"] = (SETS / sid / "set.txt").read_text()
-data = json.dumps(cfg, ensure_ascii=False).replace("</", "<\\/")
+ITER = 600_000   # voltes de PBKDF2-SHA256: fa lent provar codis a l'atzar
+
+def normaliza(c):   # igual que a l'app: sense majúscules ni espais de més (així el mòbil no et molesta)
+    return " ".join(unicodedata.normalize("NFKC", c).lower().split())
+
+if PLAIN:
+    data = json.dumps(cfg, ensure_ascii=False).replace("</", "<\\/")
+else:
+    try:
+        from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+    except ImportError:
+        sys.exit("Falta «cryptography». Executa:  python3 -m pip install --user cryptography")
+    code = os.environ.get("UM_CODE") or getpass.getpass(f"Codi de «{cfg.get('nom', sid)}» (no es veu mentre l'escrius): ")
+    if len(normaliza(code)) < 12:
+        sys.exit("El codi és massa curt: posa'n un de 12 lletres o més (millor 4 paraules, p. ex. «tigre lluna roja motor»).")
+    if not os.environ.get("UM_CODE") and getpass.getpass("Torna'l a escriure: ") != code:
+        sys.exit("Els dos codis no coincideixen.")
+    salt = hashlib.sha256(("um-salt:" + sid).encode()).digest()[:16]
+    key = hashlib.pbkdf2_hmac("sha256", normaliza(code).encode(), salt, ITER, 32)
+    plain = json.dumps(cfg, ensure_ascii=False).encode()
+    iv = hmac.new(key, b"iv" + plain, hashlib.sha256).digest()[:12]   # mateix text → mateix xifrat (versió estable); text diferent → iv diferent
+    ct = AESGCM(key).encrypt(iv, plain, None)
+    b = lambda x: base64.b64encode(x).decode()
+    data = json.dumps({"id": sid, "enc": {"v": hashlib.sha1(ct).hexdigest()[:8], "i": ITER, "s": b(salt), "n": b(iv), "c": b(ct)}})
 
 src = (ROOT / "index.html").read_text()
 out, n = re.subn(r"/\*SET\*/.*?/\*SET\*/", lambda m: "/*SET*/" + data + "/*SET*/", src, flags=re.S)
@@ -53,6 +81,11 @@ if prev.exists():
         date = json.loads(m.group(1))["d"]
 out, n = re.subn(r"/\*BUILD\*/.*?/\*BUILD\*/", lambda m: "/*BUILD*/" + json.dumps({"v": version, "d": date}) + "/*BUILD*/", out, flags=re.S)
 assert n == 1, "No trobo el marcador /*BUILD*/ a index.html"
+# CSP: en lloc de 'unsafe-inline' als scripts, només s'accepten aquests scripts exactes (hash)
+hashes = " ".join("'sha256-" + base64.b64encode(hashlib.sha256(x.encode("utf-8")).digest()).decode() + "'" for x in re.findall(r"<script>(.*?)</script>", out, flags=re.S))
+out, n = re.subn(r"script-src 'self' 'unsafe-inline'", lambda m: "script-src 'self' " + hashes, out, count=1)
+assert n == 1, "No trobo script-src a la CSP"
+assert "<script>" in out and hashes
 (DOCS / "index.html").write_text(out)
 
 # Offline: el service worker porta la versió (així el mòbil sap que hi ha canvis)
@@ -62,4 +95,4 @@ assert n == 1, "No trobo «const VERSION = '…';» a sw.js"
 shutil.copy(ROOT / "manifest.webmanifest", DOCS / "manifest.webmanifest")
 shutil.copytree(ROOT / "assets" / "icons", DOCS / "assets" / "icons", dirs_exist_ok=True)
 n_temes = len(re.findall(r"^\d{1,2}:\d{2}", cfg["txt"], re.M))
-print(f"✓ docs/index.html amb «{cfg.get('nom')}» ({n_temes} temes) · versió {version} ({date[8:10]}/{date[5:7]} {date[11:16]})")
+print(f"✓ docs/index.html amb «{cfg.get('nom')}» ({n_temes} temes, {'SENSE xifrar ⚠️' if PLAIN else 'xifrat 🔐'}) · versió {version} ({date[8:10]}/{date[5:7]} {date[11:16]})")
