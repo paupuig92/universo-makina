@@ -5,8 +5,10 @@
   python3 build.py                 → llista els sets
   python3 build.py <id>            → posa aquest set a docs/ XIFRAT (et demana el codi de l'esdeveniment)
   python3 build.py <id> --sin-cifrar → sense xifrar (només per provar en local, MAI per publicar)
+  python3 build.py <id> --probar   → no genera res: diu si un codi OBRE el set que hi ha ara a docs/
+  python3 build.py <id> --visible  → el codi es veu mentre l'escrius (per defecte NO es veu i es demana dues vegades)
 
-El codi no es guarda enlloc: el poses tu cada vegada (o amb la variable UM_CODE). Només el pots escriure al terminal.
+El codi no es guarda enlloc: el poses tu cada vegada (o amb la variable UM_CODE).
 Necessita «cryptography»:  python3 -m pip install --user cryptography
 """
 import base64, getpass, hashlib, hmac, json, os, re, shutil, sys, time, unicodedata
@@ -26,16 +28,34 @@ if len(sys.argv) < 2:
 
 sid = sys.argv[1]
 PLAIN = "--sin-cifrar" in sys.argv
-if sid not in sets():
-    sys.exit(f"No trobo sets/{sid}/set.txt")
-cfg = json.loads((SETS / sid / "set.json").read_text())
-cfg["id"] = sid
-cfg["txt"] = (SETS / sid / "set.txt").read_text()
+HIDDEN = "--visible" not in sys.argv
 ITER = 600_000   # voltes de PBKDF2-SHA256: fa lent provar codis a l'atzar
 
 def normaliza(c):   # igual que a l'app: sense majúscules ni espais de més (així el mòbil no et molesta)
     return " ".join(unicodedata.normalize("NFKC", c).lower().split())
 
+if "--probar" in sys.argv:
+    try:
+        from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+    except ImportError:
+        sys.exit("Falta «cryptography». Executa:  python3 -m pip install --user cryptography")
+    m = re.search(r"/\*SET\*/(\{.*?\})/\*SET\*/", (ROOT / "docs" / "index.html").read_text(), flags=re.S)
+    enc = json.loads(m.group(1)).get("enc") if m else None
+    if not enc:
+        sys.exit("El docs/index.html d'ara NO està xifrat (⚠️ el set es veuria en clar).")
+    code = os.environ.get("UM_CODE") or (getpass.getpass if HIDDEN else input)("Codi a provar (no es veu): " if HIDDEN else "Codi a provar: ")
+    key = hashlib.pbkdf2_hmac("sha256", normaliza(code).encode(), base64.b64decode(enc["s"]), enc["i"], 32)
+    try:
+        AESGCM(key).decrypt(base64.b64decode(enc["n"]), base64.b64decode(enc["c"]), None)
+    except Exception:
+        sys.exit(f"❌ Aquest codi NO obre el set de docs/ (versió {enc['v']}). Codi provat: {len(code)} caràcters.")
+    sys.exit(f"✅ Aquest codi OBRE el set de docs/ (versió {enc['v']}).")
+
+if sid not in sets():
+    sys.exit(f"No trobo sets/{sid}/set.txt")
+cfg = json.loads((SETS / sid / "set.json").read_text())
+cfg["id"] = sid
+cfg["txt"] = (SETS / sid / "set.txt").read_text()
 if PLAIN:
     data = json.dumps(cfg, ensure_ascii=False).replace("</", "<\\/")
 else:
@@ -43,11 +63,14 @@ else:
         from cryptography.hazmat.primitives.ciphers.aead import AESGCM
     except ImportError:
         sys.exit("Falta «cryptography». Executa:  python3 -m pip install --user cryptography")
-    code = os.environ.get("UM_CODE") or getpass.getpass(f"Codi de «{cfg.get('nom', sid)}» (no es veu mentre l'escrius): ")
+    ask = getpass.getpass if HIDDEN else input
+    code = os.environ.get("UM_CODE") or ask(f"Codi de «{cfg.get('nom', sid)}» ({'no es veu' if HIDDEN else 'es veu'} mentre l'escrius): ")
     if len(normaliza(code)) < 8:
         sys.exit("El codi és massa curt: mínim 8 caràcters (si són 8, han de ser ALEATORIS, de gestor de contrasenyes; millor 4 paraules sense relació).")
-    if not os.environ.get("UM_CODE") and getpass.getpass("Torna'l a escriure: ") != code:
+    if not os.environ.get("UM_CODE") and HIDDEN and getpass.getpass("Torna'l a escriure: ") != code:
         sys.exit("Els dos codis no coincideixen.")
+    if not HIDDEN:
+        print(f"Codi: «{code}» ({len(code)} caràcters)")
     salt = hashlib.sha256(("um-salt:" + sid).encode()).digest()[:16]
     key = hashlib.pbkdf2_hmac("sha256", normaliza(code).encode(), salt, ITER, 32)
     plain = json.dumps(cfg, ensure_ascii=False).encode()

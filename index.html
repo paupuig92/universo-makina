@@ -481,7 +481,8 @@ html.locked body>*:not(#lock){display:none!important}
   <p id="lockP">Escribe el código de tu evento.</p>
   <div class="card">
     <form id="lockF" autocomplete="off">
-      <input id="lockI" type="text" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="go" aria-label="Código" autocomplete="off">
+      <input id="lockI" type="password" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="go" aria-label="Código" autocomplete="off">
+      <button type="button" id="lockV" aria-pressed="false">Ver código</button>
       <button class="save" id="lockB" type="submit">Entrar</button>
     </form>
   </div>
@@ -666,6 +667,7 @@ var UM_SET = UM_RAW, UM_LOCKED = false;
     let raw = null; try { raw = u8(kept); } catch {}
     (raw ? open(raw).then(cfg => done(raw, cfg)) : Promise.reject()).catch(() => { del(KS); say('El código ha cambiado. Escríbelo otra vez.', true); form(); });
   }
+  q('lockV').onclick = e => { const on = I.type === 'password'; I.type = on ? 'text' : 'password'; e.target.setAttribute('aria-pressed', on); e.target.textContent = on ? 'Ocultar código' : 'Ver código'; I.focus(); };
   F.onsubmit = async e => {
     e.preventDefault();
     if (!I.value.trim()) return;
