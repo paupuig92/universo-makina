@@ -6,6 +6,7 @@
   python3 build.py <id>            → posa aquest set a docs/ XIFRAT (et demana el codi de l'esdeveniment)
   python3 build.py <id> --sin-cifrar → sense xifrar (només per provar en local, MAI per publicar)
   python3 build.py <id> --probar   → no genera res: diu si un codi OBRE el set que hi ha ara a docs/
+  python3 build.py <id> --reusar   → torna a fer la pàgina SENSE tocar el xifrat que ja hi ha a docs/ (no demana codi; per canvis de disseny)
   python3 build.py <id> --visible  → el codi es veu mentre l'escrius (per defecte NO es veu i es demana dues vegades)
 
 El codi no es guarda enlloc: el poses tu cada vegada (o amb la variable UM_CODE).
@@ -29,6 +30,7 @@ if len(sys.argv) < 2:
 sid = sys.argv[1]
 PLAIN = "--sin-cifrar" in sys.argv
 HIDDEN = "--visible" not in sys.argv
+REUSE = "--reusar" in sys.argv
 ITER = 600_000   # voltes de PBKDF2-SHA256: fa lent provar codis a l'atzar
 
 def normaliza(c):   # igual que a l'app: sense majúscules ni espais de més (així el mòbil no et molesta)
@@ -51,12 +53,19 @@ if "--probar" in sys.argv:
         sys.exit(f"❌ Aquest codi NO obre el set de docs/ (versió {enc['v']}). Codi provat: {len(code)} caràcters.")
     sys.exit(f"✅ Aquest codi OBRE el set de docs/ (versió {enc['v']}).")
 
-if sid not in sets():
-    sys.exit(f"No trobo sets/{sid}/set.txt")
-cfg = json.loads((SETS / sid / "set.json").read_text())
-cfg["id"] = sid
-cfg["txt"] = (SETS / sid / "set.txt").read_text()
-if PLAIN:
+if REUSE:
+    cfg = {"id": sid, "nom": "xifrat reutilitzat", "txt": ""}
+else:
+    if sid not in sets():
+        sys.exit(f"No trobo sets/{sid}/set.txt")
+    cfg = json.loads((SETS / sid / "set.json").read_text())
+    cfg["id"] = sid
+    cfg["txt"] = (SETS / sid / "set.txt").read_text()
+if REUSE:
+    m = re.search(r"/\*SET\*/(\{.*?\})/\*SET\*/", (ROOT / "docs" / "index.html").read_text(), flags=re.S)
+    assert m and '"enc"' in m.group(1), "docs/index.html no té un set xifrat per reutilitzar"
+    data = m.group(1)
+elif PLAIN:
     data = json.dumps(cfg, ensure_ascii=False).replace("</", "<\\/")
 else:
     try:
@@ -95,7 +104,7 @@ for f in icons:
 version = h.hexdigest()[:8]
 
 # Data llegible (Ajustes): la del fitxer més nou. Si la versió és la mateixa que la de docs/, es manté la data d'abans.
-fonts = [ROOT / "index.html", ROOT / "sw.js", ROOT / "manifest.webmanifest", SETS / sid / "set.txt", SETS / sid / "set.json", *icons]
+fonts = [ROOT / "index.html", ROOT / "sw.js", ROOT / "manifest.webmanifest", *([] if REUSE else [SETS / sid / "set.txt", SETS / sid / "set.json"]), *icons]
 date = time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime(max(f.stat().st_mtime for f in fonts)))
 prev = DOCS / "index.html"
 if prev.exists():
@@ -117,5 +126,5 @@ assert n == 1, "No trobo «const VERSION = '…';» a sw.js"
 (DOCS / "sw.js").write_text(sw)
 shutil.copy(ROOT / "manifest.webmanifest", DOCS / "manifest.webmanifest")
 shutil.copytree(ROOT / "assets" / "icons", DOCS / "assets" / "icons", dirs_exist_ok=True)
-n_temes = len(re.findall(r"^\d{1,2}:\d{2}", cfg["txt"], re.M))
-print(f"✓ docs/index.html amb «{cfg.get('nom')}» ({n_temes} temes, {'SENSE xifrar ⚠️' if PLAIN else 'xifrat 🔐'}) · versió {version} ({date[8:10]}/{date[5:7]} {date[11:16]})")
+n_temes = '?' if REUSE else len(re.findall(r"^\d{1,2}:\d{2}", cfg["txt"], re.M))
+print(f"✓ docs/index.html amb «{cfg.get('nom')}» ({n_temes} temes, {'SENSE xifrar ⚠️' if PLAIN and not REUSE else 'xifrat 🔐'}) · versió {version} ({date[8:10]}/{date[5:7]} {date[11:16]})")
