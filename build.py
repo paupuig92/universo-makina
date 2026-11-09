@@ -3,15 +3,17 @@
    La versió és una empremta del contingut: si no canvia res, és la mateixa.
 
   python3 build.py                 → llista els sets
-  python3 build.py <id>            → posa aquest set a docs/ XIFRAT (et demana el codi de l'esdeveniment)
+  python3 build.py <id>            → posa aquest set a docs/ XIFRAT amb el codi de Pau (obre sempre).
+                                     Si hi ha dates (abre/cierra), entre aquestes dates s'obre SENSE codi per a tothom.
   python3 build.py <id> --sin-cifrar → sense xifrar (només per provar en local, MAI per publicar)
   python3 build.py <id> --probar   → no genera res: diu si un codi OBRE el set que hi ha ara a docs/
   python3 build.py <id> --reusar   → torna a fer la pàgina SENSE tocar el xifrat que ja hi ha a docs/ (no demana codi; per canvis de disseny)
   python3 build.py <id> --abre 2026-11-30 --cierra 2026-12-09  → dates (fora del xifrat; també «abre»/«cierra» a set.json).
-                                     «cierra» = primer dia tancat (00:00 hora d'aquí). --estricta: abans d'«abre» ningú no entra.
+                                     «cierra» = primer dia tancat (00:00 hora d'aquí). Fora de les dates només obre el codi de Pau.
+  python3 build.py <id> --reusar --sin-publico → treu l'accés sense codi (després de «cierra»: el set ja no es pot llegir sense el codi).
   python3 build.py <id> --visible  → el codi es veu mentre l'escrius (per defecte NO es veu i es demana dues vegades)
 
-El codi no es guarda enlloc: el poses tu cada vegada (o amb la variable UM_CODE).
+El codi no es guarda enlloc: el poses tu cada vegada (o amb UM_CODE).
 Necessita «cryptography»:  python3 -m pip install --user cryptography
 """
 import base64, getpass, hashlib, hmac, json, os, re, shutil, sys, time, unicodedata
@@ -54,12 +56,17 @@ if "--probar" in sys.argv:
     if not enc:
         sys.exit("El docs/index.html d'ara NO està xifrat (⚠️ el set es veuria en clar).")
     code = os.environ.get("UM_CODE") or (getpass.getpass if HIDDEN else input)("Codi a provar (no es veu): " if HIDDEN else "Codi a provar: ")
-    key = hashlib.pbkdf2_hmac("sha256", normaliza(code).encode(), base64.b64decode(enc["s"]), enc["i"], 32)
-    try:
-        AESGCM(key).decrypt(base64.b64decode(enc["n"]), base64.b64decode(enc["c"]), None)
-    except Exception:
-        sys.exit(f"❌ Aquest codi NO obre el set de docs/ (versió {enc['v']}). Codi provat: {len(code)} caràcters.")
-    sys.exit(f"✅ Aquest codi OBRE el set de docs/ (versió {enc['v']}).")
+    d64 = base64.b64decode
+    for slot in [x for x in enc.get("k", []) if "s" in x] or [{"t": "únic", "s": enc["s"]}]:
+        key = hashlib.pbkdf2_hmac("sha256", normaliza(code).encode(), d64(slot["s"]), enc["i"], 32)
+        try:
+            dk = AESGCM(key).decrypt(d64(slot["n"]), d64(slot["c"]), None) if "c" in slot else key
+            AESGCM(dk).decrypt(d64(enc["n"]), d64(enc["c"]), None)
+        except Exception:
+            continue
+        quin = {"pau": "el codi de PAU (obre sempre)"}.get(slot["t"], "el codi")
+        sys.exit(f"✅ Aquest codi OBRE el set de docs/ (versió {enc['v']}): és {quin}.")
+    sys.exit(f"❌ Aquest codi NO obre el set de docs/ (versió {enc['v']}). Codi provat: {len(code)} caràcters.")
 
 if REUSE:
     cfg = {"id": sid, "nom": "xifrat reutilitzat", "txt": ""}
@@ -73,11 +80,12 @@ if REUSE:
     m = re.search(r"/\*SET\*/(\{.*?\})/\*SET\*/", (ROOT / "docs" / "index.html").read_text(), flags=re.S)
     assert m and '"enc"' in m.group(1), "docs/index.html no té un set xifrat per reutilitzar"
     data = m.group(1)
-    if arg("--abre") or arg("--cierra") or "--estricta" in sys.argv:
+    if arg("--abre") or arg("--cierra") or "--sin-publico" in sys.argv:
         d = json.loads(data)
+        if "--sin-publico" in sys.argv:
+            d["enc"]["k"] = [x for x in d["enc"].get("k", []) if x["t"] != "publico"]
         w = d.get("win", {})
         w.update({k: v for k, v in {"abre": dia(arg("--abre")), "cierra": dia(arg("--cierra"))}.items() if v})
-        if "--estricta" in sys.argv: w["estricta"] = True
         d["win"] = w
         data = json.dumps(d)
 elif PLAIN:
@@ -88,26 +96,30 @@ else:
     except ImportError:
         sys.exit("Falta «cryptography». Executa:  python3 -m pip install --user cryptography")
     ask = getpass.getpass if HIDDEN else input
-    code = os.environ.get("UM_CODE") or ask(f"Codi de «{cfg.get('nom', sid)}» ({'no es veu' if HIDDEN else 'es veu'} mentre l'escrius): ")
+    code = os.environ.get("UM_CODE") or ask(f"El TEU codi, Pau ({'no es veu' if HIDDEN else 'es veu'} mentre l'escrius; diferent del d'admin): ")
     if len(normaliza(code)) < 8:
         sys.exit("El codi és massa curt: mínim 8 caràcters (si són 8, han de ser ALEATORIS, de gestor de contrasenyes; millor 4 paraules sense relació).")
     if not os.environ.get("UM_CODE") and HIDDEN and getpass.getpass("Torna'l a escriure: ") != code:
         sys.exit("Els dos codis no coincideixen.")
     if not HIDDEN:
         print(f"Codi: «{code}» ({len(code)} caràcters)")
-    salt = hashlib.sha256(("um-salt:" + sid).encode()).digest()[:16]
-    key = hashlib.pbkdf2_hmac("sha256", normaliza(code).encode(), salt, ITER, 32)
+    # Clau del set (dk) xifrada amb el codi de Pau. Determinista: mateix codi i text → mateixa versió.
+    salt = hashlib.sha256(f"um-salt:pau:{sid}".encode()).digest()[:16]
+    kek = hashlib.pbkdf2_hmac("sha256", normaliza(code).encode(), salt, ITER, 32)
     plain = json.dumps(cfg, ensure_ascii=False).encode()
-    iv = hmac.new(key, b"iv" + plain, hashlib.sha256).digest()[:12]   # mateix text → mateix xifrat (versió estable); text diferent → iv diferent
-    ct = AESGCM(key).encrypt(iv, plain, None)
+    dk = hmac.new(kek, b"dk" + plain, hashlib.sha256).digest()
+    iv = hmac.new(dk, b"iv" + plain, hashlib.sha256).digest()[:12]
+    ct = AESGCM(dk).encrypt(iv, plain, None)
     b = lambda x: base64.b64encode(x).decode()
-    out_d = {"id": sid, "enc": {"v": hashlib.sha1(ct).hexdigest()[:8], "i": ITER, "s": b(salt), "n": b(iv), "c": b(ct)}}
+    wn = hmac.new(kek, b"w" + dk, hashlib.sha256).digest()[:12]
+    slots = [{"t": "pau", "s": b(salt), "n": b(wn), "c": b(AESGCM(kek).encrypt(wn, dk, None))}]
     w = {k: v for k, v in {"abre": dia(arg("--abre") or cfg.get("abre")), "cierra": dia(arg("--cierra") or cfg.get("cierra"))}.items() if v}
-    if "--estricta" in sys.argv or cfg.get("estricta"): w["estricta"] = True
     if not w and (ROOT / "docs" / "index.html").exists():   # sense dates noves: es manté la finestra que ja hi havia publicada
         m = re.search(r"/\*SET\*/(\{.*?\})/\*SET\*/", (ROOT / "docs" / "index.html").read_text(), flags=re.S)
         w = json.loads(m.group(1)).get("win", {}) if m else {}
-    if w: out_d["win"] = w
+    if w:
+        slots.append({"t": "publico", "k": b(dk)})   # entre «abre» i «cierra», sense codi (la porta de les dates la fa el mòbil)
+    out_d = {"id": sid, "enc": {"v": hashlib.sha1(ct).hexdigest()[:8], "i": ITER, "n": b(iv), "c": b(ct), "k": slots}, **({"win": w} if w else {})}
     data = json.dumps(out_d)
 
 src = (ROOT / "index.html").read_text()

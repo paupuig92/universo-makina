@@ -637,59 +637,62 @@ var UM_SET = UM_RAW, UM_LOCKED = false;
   const get = k => { for (const f of stg) { try { const v = f().getItem(k); if (v != null) return v; } catch {} } return null; };
   const put = (k, v) => { for (const f of stg) { try { f().setItem(k, v); return true; } catch {} } return false; };
   const del = k => { for (const f of stg) { try { f().removeItem(k); } catch {} } };
+  const wipe = () => ['um.key.', 'um.set.', 'um.txt.', 'um.draft.', 'um.star.'].forEach(p => del(p + UM_RAW.id));
   window.umLock = () => { del(KS); del(CS); location.reload(); };
-  // Dates d'obertura (UM_RAW.win, fora del xifrat). Des de «cierra» l'app es tanca i esborra el set d'aquest mòbil.
-  // Abans d'«abre» només es bloqueja si win.estricta (si no, ja fa de porta el codi).
-  const win = UM_RAW.win || {}, now = Date.now(), tc = Date.parse(win.cierra), ta = Date.parse(win.abre);
-  const shut = now >= tc, early = win.estricta && now < ta;
-  if (shut || early) {
-    if (shut) ['um.key.', 'um.set.', 'um.txt.', 'um.draft.', 'um.star.'].forEach(p => del(p + UM_RAW.id));
-    UM_LOCKED = true;
-    document.documentElement.classList.add('locked');
-    const t = (id, s) => { document.getElementById(id).textContent = s; };
-    t('lockT', shut ? 'Evento terminado' : 'Muy pronto');
-    t('lockP', shut ? 'Esta app ya no está disponible.' : 'Disponible a partir del ' + new Date(ta).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', timeZone: 'Europe/Madrid' }) + '.');
-    document.getElementById('lockF').hidden = true;
-    if (early && ta - now < 2e9) setTimeout(() => location.reload(), ta - now + 1000);
-    return;
-  }
-  if (tc - now < 2e9) setTimeout(() => location.reload(), tc - now + 1000);   // si l'app és oberta quan es tanca
+  // Dates (UM_RAW.win): entre «abre» i «cierra» s'obre sense codi per a tothom (slot «publico»).
+  // Fora de les dates només obre el codi de Pau (slot «pau»); qui hi havia entrat sense codi, en arribar «cierra» s'esborra.
+  const slots = enc.k || [{ t: 'pau', s: enc.s }];
+  const win = UM_RAW.win || {}, now = Date.now(), ta = Date.parse(win.abre), tc = Date.parse(win.cierra);
+  const pub = slots.find(x => x.t === 'publico');
+  const open_ = !!pub && !(now < ta) && !(now >= tc);
+  const later = (t) => { if (t > now && t - now < 2e9) setTimeout(() => location.reload(), t - now + 1000); };
   let c = null; try { c = JSON.parse(get(CS)); } catch {}
-  if (c && c.v === enc.v && c.cfg) { UM_SET = c.cfg; return; }
-  UM_LOCKED = true;
-  document.documentElement.classList.add('locked');
-  const q = id => document.getElementById(id), S = q('lockS'), F = q('lockF'), I = q('lockI'), B = q('lockB');
+  if (c && c.t === 'publico' && !open_) { wipe(); c = null; }
+  if (c && c.v === enc.v && c.cfg) { UM_SET = c.cfg; if (c.t === 'publico') later(tc); return; }
   const u8 = s => Uint8Array.from(atob(s), ch => ch.charCodeAt(0));
   const b64 = a => btoa(String.fromCharCode(...a));
   const norm = s => String(s).normalize('NFKC').toLowerCase().split(/\s+/).filter(Boolean).join(' ');
-  const say = (t, err) => { S.textContent = t; S.className = err ? 'err' : ''; };
-  const open = async raw => {
-    const k = await crypto.subtle.importKey('raw', raw, 'AES-GCM', false, ['decrypt']);
-    return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: u8(enc.n) }, k, u8(enc.c))));
-  };
-  const fromCode = async code => {
+  const aes = (raw, use) => crypto.subtle.importKey('raw', raw, 'AES-GCM', false, [use]);
+  const dec = async (raw, n, c) => new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: u8(n) }, await aes(raw, 'decrypt'), u8(c)));
+  const read = async dk => JSON.parse(new TextDecoder().decode(await dec(dk, enc.n, enc.c)));
+  const unwrap = (kek, s) => s.c ? dec(kek, s.n, s.c) : kek;   // format antic: el codi és directament la clau
+  const kek = async (code, s) => {
     const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(norm(code)), 'PBKDF2', false, ['deriveBits']);
-    return new Uint8Array(await crypto.subtle.deriveBits({ name: 'PBKDF2', salt: u8(enc.s), iterations: enc.i, hash: 'SHA-256' }, base, 256));
+    return new Uint8Array(await crypto.subtle.deriveBits({ name: 'PBKDF2', salt: u8(s.s), iterations: enc.i, hash: 'SHA-256' }, base, 256));
   };
-  const done = (raw, cfg) => {
-    if (!put(CS, JSON.stringify({ v: enc.v, cfg })) || !put(KS, b64(raw))) { say('No puedo guardar el set en este móvil (¿modo privado?).', true); return false; }
-    location.reload(); return true;
-  };
+  const save = (t, cfg, k) => put(CS, JSON.stringify({ v: enc.v, t, cfg })) && (!k || put(KS, JSON.stringify({ t, k: b64(k) })));
+  UM_LOCKED = true;
+  document.documentElement.classList.add('locked');
+  const q = id => document.getElementById(id), S = q('lockS'), F = q('lockF'), I = q('lockI'), B = q('lockB');
+  const say = (t, err) => { S.textContent = t; S.className = err ? 'err' : ''; };
+  const fail = () => say('No puedo guardar el set en este móvil (¿modo privado?).', true);
   const form = () => { F.hidden = false; B.disabled = false; I.disabled = false; I.focus(); };
   if (!(window.crypto && crypto.subtle)) { F.hidden = true; say('Este navegador no puede abrir el set (hace falta https).', true); return; }
-  // Set nuevo con el código ya recordado en este móvil: se abre solo
-  const kept = get(KS);
-  if (kept) {
-    F.hidden = true; say('Actualizando el set…');
-    let raw = null; try { raw = u8(kept); } catch {}
-    (raw ? open(raw).then(cfg => done(raw, cfg)) : Promise.reject()).catch(() => { del(KS); say('El código ha cambiado. Escríbelo otra vez.', true); form(); });
+  // Dins de les dates: s'obre sol, sense codi
+  if (open_) {
+    F.hidden = true; say('Abriendo…');
+    read(u8(pub.k)).then(cfg => save('publico', cfg) ? location.reload() : fail()).catch(() => { say('No se ha podido abrir el set.', true); });
+    return;
   }
+  const fecha = t => new Date(t).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', timeZone: 'Europe/Madrid' });
+  if (now >= tc) { q('lockT').textContent = 'Evento terminado'; q('lockP').textContent = 'Esta app ya no está disponible.'; }
+  else if (pub && now < ta) { q('lockT').textContent = 'Muy pronto'; q('lockP').textContent = 'Disponible a partir del ' + fecha(ta) + '.'; later(ta); }
+  // Set nou amb el codi ja recordat en aquest mòbil: s'obre sol
+  let kept = null; try { kept = JSON.parse(get(KS)); } catch {}
+  const mine = kept && slots.find(x => x.t === kept.t && x.s);
+  if (mine) {
+    F.hidden = true; say('Actualizando el set…');
+    (async () => { const dk = await unwrap(u8(kept.k), mine); return save(mine.t, await read(dk), u8(kept.k)) ? location.reload() : fail(); })()
+      .catch(() => { del(KS); say('El código ha cambiado. Escríbelo otra vez.', true); form(); });
+  } else if (get(KS)) del(KS);
   F.onsubmit = async e => {
     e.preventDefault();
     if (!I.value.trim()) return;
     B.disabled = I.disabled = true; say('Comprobando…');
-    try { const raw = await fromCode(I.value); done(raw, await open(raw)); }
-    catch { say('Código incorrecto.', true); form(); I.select(); }
+    for (const s of slots.filter(x => x.s)) {
+      try { const k = await kek(I.value, s); const cfg = await read(await unwrap(k, s)); if (save(s.t, cfg, k)) location.reload(); else { fail(); form(); } return; } catch {}
+    }
+    say('Código incorrecto.', true); form(); I.select();
   };
 })();
 </script>
