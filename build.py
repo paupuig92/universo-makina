@@ -7,6 +7,8 @@
   python3 build.py <id> --sin-cifrar → sense xifrar (només per provar en local, MAI per publicar)
   python3 build.py <id> --probar   → no genera res: diu si un codi OBRE el set que hi ha ara a docs/
   python3 build.py <id> --reusar   → torna a fer la pàgina SENSE tocar el xifrat que ja hi ha a docs/ (no demana codi; per canvis de disseny)
+  python3 build.py <id> --abre 2026-11-30 --cierra 2026-12-09  → dates (fora del xifrat; també «abre»/«cierra» a set.json).
+                                     «cierra» = primer dia tancat (00:00 hora d'aquí). --estricta: abans d'«abre» ningú no entra.
   python3 build.py <id> --visible  → el codi es veu mentre l'escrius (per defecte NO es veu i es demana dues vegades)
 
 El codi no es guarda enlloc: el poses tu cada vegada (o amb la variable UM_CODE).
@@ -31,6 +33,12 @@ sid = sys.argv[1]
 PLAIN = "--sin-cifrar" in sys.argv
 HIDDEN = "--visible" not in sys.argv
 REUSE = "--reusar" in sys.argv
+
+def arg(name):
+    return sys.argv[sys.argv.index(name) + 1] if name in sys.argv and sys.argv.index(name) + 1 < len(sys.argv) else None
+
+def dia(s):   # «2026-12-09» → «2026-12-09T00:00:00+01:00» (hora d'aquí a l'hivern)
+    return s if s is None or "T" in s else s + "T00:00:00+01:00"
 ITER = 600_000   # voltes de PBKDF2-SHA256: fa lent provar codis a l'atzar
 
 def normaliza(c):   # igual que a l'app: sense majúscules ni espais de més (així el mòbil no et molesta)
@@ -65,6 +73,13 @@ if REUSE:
     m = re.search(r"/\*SET\*/(\{.*?\})/\*SET\*/", (ROOT / "docs" / "index.html").read_text(), flags=re.S)
     assert m and '"enc"' in m.group(1), "docs/index.html no té un set xifrat per reutilitzar"
     data = m.group(1)
+    if arg("--abre") or arg("--cierra") or "--estricta" in sys.argv:
+        d = json.loads(data)
+        w = d.get("win", {})
+        w.update({k: v for k, v in {"abre": dia(arg("--abre")), "cierra": dia(arg("--cierra"))}.items() if v})
+        if "--estricta" in sys.argv: w["estricta"] = True
+        d["win"] = w
+        data = json.dumps(d)
 elif PLAIN:
     data = json.dumps(cfg, ensure_ascii=False).replace("</", "<\\/")
 else:
@@ -86,7 +101,14 @@ else:
     iv = hmac.new(key, b"iv" + plain, hashlib.sha256).digest()[:12]   # mateix text → mateix xifrat (versió estable); text diferent → iv diferent
     ct = AESGCM(key).encrypt(iv, plain, None)
     b = lambda x: base64.b64encode(x).decode()
-    data = json.dumps({"id": sid, "enc": {"v": hashlib.sha1(ct).hexdigest()[:8], "i": ITER, "s": b(salt), "n": b(iv), "c": b(ct)}})
+    out_d = {"id": sid, "enc": {"v": hashlib.sha1(ct).hexdigest()[:8], "i": ITER, "s": b(salt), "n": b(iv), "c": b(ct)}}
+    w = {k: v for k, v in {"abre": dia(arg("--abre") or cfg.get("abre")), "cierra": dia(arg("--cierra") or cfg.get("cierra"))}.items() if v}
+    if "--estricta" in sys.argv or cfg.get("estricta"): w["estricta"] = True
+    if not w and (ROOT / "docs" / "index.html").exists():   # sense dates noves: es manté la finestra que ja hi havia publicada
+        m = re.search(r"/\*SET\*/(\{.*?\})/\*SET\*/", (ROOT / "docs" / "index.html").read_text(), flags=re.S)
+        w = json.loads(m.group(1)).get("win", {}) if m else {}
+    if w: out_d["win"] = w
+    data = json.dumps(out_d)
 
 src = (ROOT / "index.html").read_text()
 out, n = re.subn(r"/\*SET\*/.*?/\*SET\*/", lambda m: "/*SET*/" + data + "/*SET*/", src, flags=re.S)

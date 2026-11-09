@@ -89,3 +89,9 @@ Com els cartells d'UM, sec i sense «capa IA». Les regles també són al princi
 - Honest: això és confidencialitat real, **no hi ha rols**: qui té el codi ho veu tot, i les edicions són locals a cada mòbil. Un codi curt es pot forçar sense connexió: sempre frases llargues. Per canviar un codi: tornar a fer `build.py` amb el nou i repartir-lo.
 - **El text en clar no ha d'anar a GitHub**: `sets/` i `UNIVERSO-MAKINA-BRIEF.md` són al `.gitignore` (només viuen al Mac). Si algun cop apareix `set.txt` al repo, parar i avisar.
 - CSP: `build.py` posa el hash dels scripts a `script-src` (sense `'unsafe-inline'`). Si es canvia un `<script>`, cal tornar a fer el build. La pàgina porta `noindex`.
+
+## Dies oberta (finestra · 09-11-2026)
+- Arenas: oberta del **30-11-2026** al **8-12-2026 inclòs** (es tanca el 9-12 a les 00:00, hora de Madrid). Es posa amb `--abre 2026-11-30 --cierra 2026-12-09` (a `build.py`, també amb `--reusar`) o amb `abre`/`cierra` al `set.json`. Si no es diuen dates, `build.py` manté les que ja hi ha publicades a `docs/`.
+- Abans del 30: per defecte ja s'hi pot entrar amb el codi (per provar). Amb `--estricta` (o `"estricta": true`) surt «Muy pronto · Disponible a partir del 30 de noviembre» i no deixa posar el codi.
+- A partir del 9-12: surt «Evento terminado» i **s'esborren del mòbil** el set, el codi, les edicions, l'esborrany i les campanes. Si l'app està oberta a mitjanit, es recarrega sola i es tanca.
+- Honest: les dates són al text públic de la pàgina (no són secretes) i és un tancament del costat del mòbil: el set xifrat continua a `docs/`. Per treure'l de debò, després del 8-12 cal publicar una versió sense set (preguntar a en Pau).

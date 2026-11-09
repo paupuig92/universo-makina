@@ -638,6 +638,22 @@ var UM_SET = UM_RAW, UM_LOCKED = false;
   const put = (k, v) => { for (const f of stg) { try { f().setItem(k, v); return true; } catch {} } return false; };
   const del = k => { for (const f of stg) { try { f().removeItem(k); } catch {} } };
   window.umLock = () => { del(KS); del(CS); location.reload(); };
+  // Dates d'obertura (UM_RAW.win, fora del xifrat). Des de «cierra» l'app es tanca i esborra el set d'aquest mòbil.
+  // Abans d'«abre» només es bloqueja si win.estricta (si no, ja fa de porta el codi).
+  const win = UM_RAW.win || {}, now = Date.now(), tc = Date.parse(win.cierra), ta = Date.parse(win.abre);
+  const shut = now >= tc, early = win.estricta && now < ta;
+  if (shut || early) {
+    if (shut) ['um.key.', 'um.set.', 'um.txt.', 'um.draft.', 'um.star.'].forEach(p => del(p + UM_RAW.id));
+    UM_LOCKED = true;
+    document.documentElement.classList.add('locked');
+    const t = (id, s) => { document.getElementById(id).textContent = s; };
+    t('lockT', shut ? 'Evento terminado' : 'Muy pronto');
+    t('lockP', shut ? 'Esta app ya no está disponible.' : 'Disponible a partir del ' + new Date(ta).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', timeZone: 'Europe/Madrid' }) + '.');
+    document.getElementById('lockF').hidden = true;
+    if (early && ta - now < 2e9) setTimeout(() => location.reload(), ta - now + 1000);
+    return;
+  }
+  if (tc - now < 2e9) setTimeout(() => location.reload(), tc - now + 1000);   // si l'app és oberta quan es tanca
   let c = null; try { c = JSON.parse(get(CS)); } catch {}
   if (c && c.v === enc.v && c.cfg) { UM_SET = c.cfg; return; }
   UM_LOCKED = true;
