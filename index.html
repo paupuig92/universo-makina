@@ -846,8 +846,8 @@ function tick() {
         main.innerHTML = `<section class="state fr">${poster(t0)}<div class="k">Empieza en</div><div class="big" id="big"></div><p>${plural(tracks.length, 'tema', 'temas')} · ${fmt(TOTAL)}</p></section>`;
         list(-1, el); last = -5;
       }
-      // Si falta més d'un dia: «32 días 4 h» (no «772:15:00»)
-      const d = Math.floor(-el / 86400), c = d ? `${plural(d, 'día', 'días')} ${Math.floor(-el % 86400 / 3600)} h` : fmt(-el);
+      // Si falta més d'un dia: dies, hores i minuts «32d 2h 26m» (no «772:15:00»)
+      const d = Math.floor(-el / 86400), c = d ? `${d}d ${Math.floor(-el % 86400 / 3600)}h ${Math.floor(-el % 3600 / 60)}m` : fmt(-el);
       setText($('big'), c); $('big').classList.toggle('l', c.length > 7);
       strip('Empieza en', fecha(new Date(t0)), c);
     } else {

@@ -44,8 +44,8 @@ else:
     except ImportError:
         sys.exit("Falta «cryptography». Executa:  python3 -m pip install --user cryptography")
     code = os.environ.get("UM_CODE") or getpass.getpass(f"Codi de «{cfg.get('nom', sid)}» (no es veu mentre l'escrius): ")
-    if len(normaliza(code)) < 12:
-        sys.exit("El codi és massa curt: posa'n un de 12 lletres o més (millor 4 paraules, p. ex. «tigre lluna roja motor»).")
+    if len(normaliza(code)) < 8:
+        sys.exit("El codi és massa curt: mínim 8 caràcters (si són 8, han de ser ALEATORIS, de gestor de contrasenyes; millor 4 paraules sense relació).")
     if not os.environ.get("UM_CODE") and getpass.getpass("Torna'l a escriure: ") != code:
         sys.exit("Els dos codis no coincideixen.")
     salt = hashlib.sha256(("um-salt:" + sid).encode()).digest()[:16]
