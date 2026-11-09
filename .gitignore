@@ -1,2 +1,6 @@
 .DS_Store
 __pycache__/
+
+# Text en clar del setlist i brief intern: només al Mac (a GitHub va xifrat)
+sets/
+UNIVERSO-MAKINA-BRIEF.md
