@@ -468,6 +468,7 @@ body.qe .bl{display:none}
 html.locked #lock{display:grid}
 html.locked body>*:not(#lock){display:none!important}
 #lock form{display:grid;gap:10px}
+#lock .ghost{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
 #lock h1{font-size:22px}
 #lock .logo{margin-bottom:10px}
 #lock p{font-size:14px;font-weight:600;color:var(--dim);line-height:1.35}
@@ -480,8 +481,9 @@ html.locked body>*:not(#lock){display:none!important}
   <h1 id="lockT">Código de acceso</h1>
   <p id="lockP">Escribe el código de tu evento.</p>
   <div class="card">
-    <form id="lockF" autocomplete="off">
-      <input id="lockI" type="password" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="go" aria-label="Código" autocomplete="off">
+    <form id="lockF" method="post" action="#">
+      <input class="ghost" type="text" name="username" value="Universo Makina" autocomplete="username" tabindex="-1" aria-hidden="true" readonly>
+      <input id="lockI" type="password" name="password" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="go" aria-label="Código" autocomplete="current-password">
       <button type="button" id="lockV" aria-pressed="false">Ver código</button>
       <button class="save" id="lockB" type="submit">Entrar</button>
     </form>
