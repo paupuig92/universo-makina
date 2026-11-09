@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-PNEXjCst85YBkblYUrzTemxWYsFOiIII58yCOAhn3yQ=' 'sha256-rfHM09WzFLQHOacJ2mqQu6SFTk6nJVTLIAY7szZm19Q='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-S0ciQIEsai2wZ6pcufhKtdRqch55sxj/5hpJ417ymfw=' 'sha256-xMsYNuOoYq+4bxPmKS4HERmQB2YaKzoEn8gDVXVAz/4='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="robots" content="noindex,nofollow">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -484,7 +484,6 @@ html.locked body>*:not(#lock){display:none!important}
     <form id="lockF" method="post" action="#">
       <input class="ghost" type="text" name="username" value="Universo Makina" autocomplete="username" tabindex="-1" aria-hidden="true" readonly>
       <input id="lockI" type="password" name="password" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="go" aria-label="Código" autocomplete="current-password">
-      <button type="button" id="lockV" aria-pressed="false">Ver código</button>
       <button class="save" id="lockB" type="submit">Entrar</button>
     </form>
   </div>
@@ -669,7 +668,6 @@ var UM_SET = UM_RAW, UM_LOCKED = false;
     let raw = null; try { raw = u8(kept); } catch {}
     (raw ? open(raw).then(cfg => done(raw, cfg)) : Promise.reject()).catch(() => { del(KS); say('El código ha cambiado. Escríbelo otra vez.', true); form(); });
   }
-  q('lockV').onclick = e => { const on = I.type === 'password'; I.type = on ? 'text' : 'password'; e.target.setAttribute('aria-pressed', on); e.target.textContent = on ? 'Ocultar código' : 'Ver código'; I.focus(); };
   F.onsubmit = async e => {
     e.preventDefault();
     if (!I.value.trim()) return;
@@ -683,7 +681,7 @@ var UM_SET = UM_RAW, UM_LOCKED = false;
 if (!UM_LOCKED) {
 const SET = UM_SET;
 // Versió (build.py: empremta del contingut + data dels fitxers). null = sense build (proves)
-const BUILD = /*BUILD*/{"v": "a0410e9a", "d": "2026-11-09T17:21:01"}/*BUILD*/;
+const BUILD = /*BUILD*/{"v": "dc717ba8", "d": "2026-11-09T16:44:10"}/*BUILD*/;
 
 // Colors de les parts: «[rosa]» sol en una línia (com a la Midnight App). Retocats per anar amb la marca (negre càlid + os + taronja UM).
 const COL = { rojo:'#ff3347', naranja:'#ff7a1a', amarillo:'#ffd43b', verde:'#3ee07f', cian:'#2fd6f0', azul:'#4a82ff', lila:'#ae7bff', rosa:'#ff5cae' };
